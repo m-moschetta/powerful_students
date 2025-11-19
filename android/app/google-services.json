@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "49645070230",
+    "project_id": "powerful-students",
+    "storage_bucket": "powerful-students.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:49645070230:android:3d6c207c24d45caff0dfb7",
+        "android_client_info": {
+          "package_name": "com.powerfulstudents.powerful_students"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACTeLOOImlp2fR5QKOHRoszID6eAioLrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

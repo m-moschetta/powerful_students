@@ -1,0 +1,33 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "powerful-students",
+          "appId": "1:49645070230:android:3d6c207c24d45caff0dfb7",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "powerful-students",
+          "appId": "1:49645070230:ios:221cf311758b03b8f0dfb7",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "powerful-students",
+          "configurations": {
+            "android": "1:49645070230:android:3d6c207c24d45caff0dfb7",
+            "ios": "1:49645070230:ios:221cf311758b03b8f0dfb7"
+          }
+        }
+      }
+    }
+  }
+}
