@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -34,8 +35,7 @@ void main() {
 
       WidgetsBinding.instance.platformDispatcher.onError =
           (Object error, StackTrace stackTrace) {
-            debugPrint('Errore non gestito dal PlatformDispatcher: $error');
-            debugPrint('Stack trace: $stackTrace');
+            debugPrint('Errore non gestito: $error');
             return true;
           };
 
@@ -61,8 +61,7 @@ void main() {
       );
     },
     (Object error, StackTrace stackTrace) {
-      debugPrint('Errore non gestito nella zona principale: $error');
-      debugPrint('Stack trace: $stackTrace');
+      debugPrint('Errore fatale: $error');
     },
   );
 }
@@ -70,32 +69,13 @@ void main() {
 Future<void> _configureTimezone() async {
   tzdata.initializeTimeZones();
   try {
-    final dynamic timezoneValue = await FlutterTimezone.getLocalTimezone();
-    final timezoneIdentifier = _resolveTimezoneIdentifier(timezoneValue);
-    tz.setLocalLocation(tz.getLocation(timezoneIdentifier));
-  } catch (e, stackTrace) {
-    debugPrint('Impossibile impostare il fuso orario locale: $e');
-    debugPrint('Stack trace: $stackTrace');
+    final timezone = await FlutterTimezone.getLocalTimezone();
+    // FlutterTimezone potrebbe restituire un oggetto o una stringa a seconda della versione
+    final String identifier = timezone is String ? timezone : (timezone as dynamic).identifier;
+    tz.setLocalLocation(tz.getLocation(identifier));
+  } catch (e) {
     tz.setLocalLocation(tz.getLocation('UTC'));
   }
-}
-
-String _resolveTimezoneIdentifier(dynamic timezoneValue) {
-  if (timezoneValue is String && timezoneValue.isNotEmpty) {
-    return timezoneValue;
-  }
-
-  try {
-    final dynamic identifier =
-        (timezoneValue as dynamic).identifier; // ignore: avoid_dynamic_calls
-    if (identifier is String && identifier.isNotEmpty) {
-      return identifier;
-    }
-  } catch (_) {
-    // Ricadiamo all'analisi generica più sotto
-  }
-
-  throw StateError('Timezone non riconosciuto: $timezoneValue');
 }
 
 class MyApp extends StatefulWidget {
@@ -106,131 +86,84 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  bool _isObserverAdded = false;
-  bool _isObserverRegistrationScheduled = false;
-  bool _notificationsInitialized = false;
-
   @override
   void initState() {
     super.initState();
-    // NON aggiungere l'observer qui - verrà aggiunto dopo che il widget è montato
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    if (!_notificationsInitialized) {
-      _notificationsInitialized = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) return;
-        try {
-          await context.read<PomodoroProvider>().initializeNotifications();
-        } catch (e, stackTrace) {
-          debugPrint(
-            'Errore nell\'inizializzazione delle notifiche (non critico): $e',
-          );
-          debugPrint('Stack trace: $stackTrace');
-        }
-      });
-    }
-
-    if (_isObserverAdded || _isObserverRegistrationScheduled) {
-      return;
-    }
-
-    _isObserverRegistrationScheduled = true;
-
-    // Registriamo l'observer dopo il primo frame per garantire che il provider sia pronto.
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Inizializzazione notifiche
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _isObserverRegistrationScheduled = false;
-
-      if (!mounted || _isObserverAdded) {
-        return;
-      }
-
-      try {
-        // Verifica che il provider sia disponibile; se non lo è, verrà sollevata un'eccezione.
-        context.read<PomodoroProvider>();
-        WidgetsBinding.instance.addObserver(this);
-        _isObserverAdded = true;
-      } catch (e, stackTrace) {
-        debugPrint('Impossibile registrare l\'observer del ciclo di vita: $e');
-        debugPrint('Stack trace: $stackTrace');
-      }
+      context.read<PomodoroProvider>().initializeNotifications();
     });
   }
 
   @override
   void dispose() {
-    if (_isObserverAdded) {
-      WidgetsBinding.instance.removeObserver(this);
-    }
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Verifica che il widget sia ancora montato e il provider disponibile
-    if (!mounted) return;
-
-    try {
-      final pomodoroProvider = context.read<PomodoroProvider>();
-
-      // A questo punto pomodoroProvider è garantito non essere null
-      // (se fosse null, avremmo già fatto return nel blocco catch sopra)
-      if (state == AppLifecycleState.paused ||
-          state == AppLifecycleState.inactive) {
-        // L'app va in background - il timer continuerà tramite notifiche programmate
-        pomodoroProvider.handleAppPaused();
-      } else if (state == AppLifecycleState.resumed) {
-        // L'app torna in foreground - verifica se il timer è scaduto
-        pomodoroProvider.handleAppResumed();
-      }
-    } catch (e, stackTrace) {
-      // Se c'è un errore, l'app continua comunque
-      debugPrint('Errore nella gestione del ciclo di vita: $e');
-      debugPrint('Stack trace: $stackTrace');
+    final provider = context.read<PomodoroProvider>();
+    if (state == AppLifecycleState.paused) {
+      provider.handleAppPaused();
+    } else if (state == AppLifecycleState.resumed) {
+      provider.handleAppResumed();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Usiamo MaterialApp con stile iOS per retrocompatibilità e flessibilità
     return MaterialApp(
       title: 'Powerful Students',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2A2A2A),
-          brightness: Brightness.light,
-        ),
         useMaterial3: true,
-        scaffoldBackgroundColor: AppColors.background,
-        fontFamily: 'Helvetica',
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(fontFamily: 'Helvetica'),
-          displayMedium: TextStyle(fontFamily: 'Helvetica'),
-          displaySmall: TextStyle(fontFamily: 'Helvetica'),
-          headlineLarge: TextStyle(fontFamily: 'Helvetica'),
-          headlineMedium: TextStyle(fontFamily: 'Helvetica'),
-          headlineSmall: TextStyle(fontFamily: 'Helvetica'),
-          titleLarge: TextStyle(fontFamily: 'Helvetica'),
-          titleMedium: TextStyle(fontFamily: 'Helvetica'),
-          titleSmall: TextStyle(fontFamily: 'Helvetica'),
-          bodyLarge: TextStyle(fontFamily: 'Helvetica'),
-          bodyMedium: TextStyle(fontFamily: 'Helvetica'),
-          bodySmall: TextStyle(fontFamily: 'Helvetica'),
-          labelLarge: TextStyle(fontFamily: 'Helvetica'),
-          labelMedium: TextStyle(fontFamily: 'Helvetica'),
-          labelSmall: TextStyle(fontFamily: 'Helvetica'),
-        ),
+        brightness: Brightness.light,
+        platform: TargetPlatform.iOS,
+        scaffoldBackgroundColor: Colors.transparent, // Gestito dal gradiente nel body
+        fontFamily: AppTypography.fontFamily,
       ),
       initialRoute: '/',
-      routes: {
-        '/': (context) => const ModeSelectionScreen(),
-        '/timer': (context) => const TimerScreen(),
-        '/group-room': (context) => const GroupRoomScreen(),
+      onGenerateRoute: (settings) {
+        Widget page;
+        switch (settings.name) {
+          case '/':
+            page = const ModeSelectionScreen();
+            break;
+          case '/timer':
+            page = const TimerScreen();
+            break;
+          case '/group-room':
+            page = const GroupRoomScreen();
+            break;
+          default:
+            page = const ModeSelectionScreen();
+        }
+        
+        // Usiamo CupertinoPageRoute per transizioni native iOS
+        return CupertinoPageRoute(
+          builder: (context) => Stack(
+            children: [
+              // Background globale sfumato stile iOS 18/26
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.bgStart, AppColors.bgEnd],
+                  ),
+                ),
+              ),
+              page,
+            ],
+          ),
+          settings: settings,
+        );
       },
     );
   }
 }
+

@@ -1,5 +1,8 @@
 import 'dart:math';
+import 'dart:ui';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:powerful_students/providers/pomodoro_provider.dart';
@@ -12,38 +15,27 @@ class TimerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(color: AppColors.background),
-        child: SafeArea(
-          child: Consumer<PomodoroProvider>(
-            builder: (context, provider, child) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Header con modalità e toggle burn
-                    _buildHeader(context, provider),
-
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Timer circolare principale
-                    _buildCircularTimer(provider),
-
-                    const Spacer(),
-
-                    // Stats pomodoro
-                    _buildPomodoroStats(provider),
-
-                    const Spacer(),
-
-                    // Pulsanti azione (Cancel e Study) - allineati con group
-                    _buildActionButtons(context, provider),
-                  ],
-                ),
-              );
-            },
-          ),
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        child: Consumer<PomodoroProvider>(
+          builder: (context, provider, child) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: Column(
+                children: [
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildHeader(context, provider),
+                  const Spacer(),
+                  _buildCircularTimer(provider),
+                  const Spacer(),
+                  _buildPomodoroStats(provider),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildActionButtons(context, provider),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -53,61 +45,34 @@ class TimerScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Pulsante Back (più discreto)
-        IconButton(
-          onPressed: () => Navigator.of(context).pushReplacementNamed('/'),
-          icon: const Icon(
-            AppIcons.back,
-            color: AppColors.textPrimary,
-            size: 24,
-          ),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            padding: const EdgeInsets.all(AppSpacing.xs),
-          ),
-        ),
-
-        // Modalità attuale
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.xs,
-          ),
-          decoration: AppDecorations.badge(),
-          child: Row(
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () {
+            if (provider.isRunning) {
+              provider.stopTimer();
+            }
+            Navigator.of(context).pop();
+          },
+          child: const Row(
             children: [
-              Icon(
-                provider.selectedMode == StudyMode.solo
-                    ? AppIcons.soloMode
-                    : AppIcons.groupMode,
-                color: AppColors.textPrimary,
-                size: 16,
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                provider.selectedMode == StudyMode.solo ? 'Solo' : 'Group',
-                style: AppTypography.caption,
-              ),
+              Icon(AppIcons.back, color: AppColors.textPrimary, size: 28),
+              Text('Back', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
-
-        // Toggle modalità burn
-        Container(
+        AppDecorations.glassContainer(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: AppDecorations.badge(),
           child: Row(
             children: [
-              const Text('Si brucia', style: AppTypography.label),
-              const SizedBox(width: AppSpacing.xs),
-              Switch(
+              const Icon(AppIcons.burn, size: 16, color: AppColors.textPrimary),
+              const SizedBox(width: 4),
+              CupertinoSwitch(
                 value: provider.isBurnMode,
-                onChanged: (value) => provider.toggleBurnMode(),
-                activeThumbColor: AppColors.secondary,
-                activeTrackColor: AppColors.secondaryWith(0.5),
+                onChanged: (value) {
+                  HapticFeedback.mediumImpact();
+                  provider.toggleBurnMode();
+                },
+                activeColor: AppColors.primary,
               ),
             ],
           ),
@@ -119,102 +84,140 @@ class TimerScreen extends StatelessWidget {
   Widget _buildCircularTimer(PomodoroProvider provider) {
     final session = provider.currentSession;
 
-    if (session == null) {
-      // Schermata iniziale - nessun timer attivo
-      return GestureDetector(
-        onTap: () => provider.startWorkSession(),
-        child: Container(
-          width: 280,
-          height: 280,
-          decoration: AppDecorations.timerCircle(),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _formatDuration(provider.defaultWorkDuration),
-                    style: AppTypography.timerLarge,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  const Text('Tocca per iniziare', style: AppTypography.title),
-                ],
+    return Center(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Ghiera di contrasto esterna (Ring) con più contrasto
+          Container(
+            width: 310,
+            height: 310,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.textPrimary.withValues(alpha: 0.15),
+                width: 15,
               ),
-              // Pulsantino circolare trascinabile per regolare il tempo del pomodoro
-              _DraggableTimerIndicator(
-                radius: 140.0,
-                initialMinutes: provider.defaultWorkDuration ~/ 60,
-                onMinutesChanged: (minutes) {
-                  provider.setDefaultWorkDurationMinutes(minutes);
-                },
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Timer attivo
-    return CircularPercentIndicator(
-      radius: 140.0,
-      lineWidth: 12.0,
-      animation: true,
-      animateFromLastPercent: true,
-      percent: session.progress,
-      center: Container(
-        width: 260,
-        height: 260,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
-          shape: BoxShape.circle,
-          boxShadow: AppShadows.lg,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Tipo di sessione
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: _getSessionColor(session.type).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                _getSessionText(session.type),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: _getSessionColor(session.type),
-                  fontFamily: 'Helvetica',
-                  letterSpacing: 0.5,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 30,
+                  spreadRadius: 2,
                 ),
-              ),
+              ],
             ),
+          ),
+          
+          if (session == null)
+            _buildSetupTimer(provider)
+          else
+            _buildActiveTimer(session),
+        ],
+      ),
+    );
+  }
 
-            const SizedBox(height: 20),
-
-            // Timer principale
-            Text(
-              session.formattedRemainingTime,
-              style: AppTypography.timerLarge,
+  Widget _buildSetupTimer(PomodoroProvider provider) {
+    return AppDecorations.glassContainer(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      borderRadius: BorderRadius.circular(150),
+      child: SizedBox(
+        width: 280,
+        height: 280,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _formatDuration(provider.defaultWorkDuration),
+                  style: AppTypography.timerLarge,
+                ),
+                const Text('IMPOSTA TEMPO', style: AppTypography.label),
+              ],
             ),
-
-            const SizedBox(height: AppSpacing.xs),
-
-            // Progresso
-            Text(
-              '${(session.progress * 100).round()}%',
-              style: AppTypography.body.copyWith(
-                color: AppColors.textSecondaryWith(0.8),
-              ),
+            _buildTimerPoints(),
+            _DraggableTimerIndicator(
+              radius: 130.0,
+              initialMinutes: provider.defaultWorkDuration ~/ 60,
+              onMinutesChanged: (minutes) {
+                provider.setDefaultWorkDurationMinutes(minutes);
+              },
             ),
           ],
         ),
       ),
-      progressColor: _getSessionColor(session.type),
-      backgroundColor: AppColors.surface,
+    );
+  }
+
+  Widget _buildActiveTimer(StudySession session) {
+    return CircularPercentIndicator(
+      radius: 150.0,
+      lineWidth: 12.0,
+      animation: true,
+      animateFromLastPercent: true,
+      percent: session.progress,
+      backgroundColor: AppColors.textPrimary.withValues(alpha: 0.05),
+      progressColor: AppColors.primary,
       circularStrokeCap: CircularStrokeCap.round,
+      center: ClipOval(
+        child: SizedBox(
+          width: 280,
+          height: 280,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Liquid Animation
+              _LiquidBackground(progress: session.progress),
+              
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _getSessionText(session.type),
+                    style: AppTypography.label.copyWith(
+                      letterSpacing: 3,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    session.formattedRemainingTime,
+                    style: AppTypography.timerLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${(session.progress * 100).round()}%',
+                    style: AppTypography.caption.copyWith(fontWeight: FontWeight.w900),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimerPoints() {
+    return Stack(
+      children: List.generate(60, (index) {
+        final angle = (index * 6) * pi / 180;
+        final isMajor = index % 5 == 0;
+        return Transform.translate(
+          offset: Offset(cos(angle) * 120, sin(angle) * 120),
+          child: Container(
+            width: isMajor ? 4 : 2,
+            height: isMajor ? 4 : 2,
+            decoration: BoxDecoration(
+              color: isMajor ? AppColors.textPrimary : AppColors.textPrimary.withValues(alpha: 0.3),
+              shape: BoxShape.circle,
+            ),
+          ),
+        );
+      }),
     );
   }
 
@@ -222,128 +225,97 @@ class TimerScreen extends StatelessWidget {
     final session = provider.currentSession;
     final isRunning = provider.isRunning;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 32.0),
-      child: Row(
-        children: [
+    return Row(
+      children: [
+        if (session != null)
           Expanded(
-            child: ElevatedButton(
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
               onPressed: () {
-                if (session != null) {
-                  provider.stopTimer();
-                }
-                Navigator.of(context).pushReplacementNamed('/');
+                HapticFeedback.lightImpact();
+                provider.stopTimer();
               },
-              style: AppButtons.secondary(),
-              child: Text(
-                'Cancel',
-                style: AppButtons.textStyle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+              child: AppDecorations.glassContainer(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                child: const Center(
+                  child: Text('Cancel', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w800, fontSize: 17)),
+                ),
               ),
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: session != null
-                  ? () {
-                      if (isRunning) {
-                        provider.pauseTimer();
-                      } else {
-                        provider.resumeTimer();
-                      }
-                    }
-                  : () {
-                      // Se non c'è sessione, avvia una nuova
-                      provider.startWorkSession();
-                    },
-              style: AppButtons.primary(),
-              child: Text(
-                session != null ? (isRunning ? 'Pause' : 'Study') : 'Study',
-                style: AppButtons.textStyle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+        if (session != null) const SizedBox(width: 16),
+        Expanded(
+          child: CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              if (session == null) {
+                provider.startWorkSession();
+              } else if (isRunning) {
+                provider.pauseTimer();
+              } else {
+                provider.resumeTimer();
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              decoration: BoxDecoration(
+                color: AppColors.cta, // Rosa per CTA come richiesto
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.cta.withValues(alpha: 0.4),
+                    blurRadius: 25,
+                    offset: const Offset(0, 10),
+                  )
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  session == null ? 'START STUDY' : (isRunning ? 'PAUSE' : 'RESUME'),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    letterSpacing: 1.2,
+                  ),
+                ),
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPomodoroStats(PomodoroProvider provider) {
+    return AppDecorations.glassContainer(
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(AppIcons.fire, color: Colors.orange, size: 22),
+          const SizedBox(width: 10),
+          Text(
+            '${provider.completedPomodoros} POMODORI',
+            style: AppTypography.subtitle.copyWith(letterSpacing: 1),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPomodoroStats(PomodoroProvider provider) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Contatore pomodori completati
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            boxShadow: AppShadows.md,
-          ),
-          child: Column(
-            children: [
-              const Icon(AppIcons.fire, color: AppColors.secondary, size: 24),
-              const SizedBox(height: 4),
-              Text(
-                '${provider.completedPomodoros}',
-                style: AppTypography.subtitle,
-              ),
-              const Text('Pomodori', style: AppTypography.label),
-            ],
-          ),
-        ),
-
-        const SizedBox(width: 20),
-
-        // Modalità burn indicator
-        if (provider.isBurnMode)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.secondaryWith(0.2),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: const Column(
-              children: [
-                Icon(AppIcons.burn, color: AppColors.secondary, size: 24),
-                SizedBox(height: 4),
-                Text('BURN', style: AppTypography.body),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Color _getSessionColor(SessionType type) {
-    switch (type) {
-      case SessionType.work:
-        return AppColors.secondary;
-      case SessionType.shortBreak:
-        return AppColors.secondary;
-      case SessionType.longBreak:
-        return AppColors.secondary;
-    }
-  }
-
   String _getSessionText(SessionType type) {
     switch (type) {
       case SessionType.work:
-        return 'LAVORO';
+        return 'CONCENTRATI';
       case SessionType.shortBreak:
-        return 'PAUSA BREVE';
+        return 'PAUSA';
       case SessionType.longBreak:
-        return 'PAUSA LUNGA';
+        return 'RELAX';
     }
   }
 
-  // Formatta la durata in minuti:secondi
   String _formatDuration(int totalSeconds) {
     final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
     final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
@@ -351,7 +323,87 @@ class TimerScreen extends StatelessWidget {
   }
 }
 
-// Widget per il pulsantino circolare trascinabile nella schermata del timer
+class _LiquidBackground extends StatefulWidget {
+  final double progress;
+  const _LiquidBackground({required this.progress});
+
+  @override
+  State<_LiquidBackground> createState() => _LiquidBackgroundState();
+}
+
+class _LiquidBackgroundState extends State<_LiquidBackground> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          size: const Size(300, 300),
+          painter: _LiquidPainter(
+            animationValue: _controller.value,
+            progress: widget.progress,
+            color: AppColors.primary.withValues(alpha: 0.4),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LiquidPainter extends CustomPainter {
+  final double animationValue;
+  final double progress;
+  final Color color;
+
+  _LiquidPainter({
+    required this.animationValue,
+    required this.progress,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    final path = Path();
+    
+    final yOffset = size.height * (1 - progress);
+    final waveHeight = 15.0;
+    
+    path.moveTo(0, size.height);
+    path.lineTo(0, yOffset);
+    
+    for (double x = 0; x <= size.width; x++) {
+      final y = yOffset + sin((x / size.width * 2 * pi) + (animationValue * 2 * pi)) * waveHeight;
+      path.lineTo(x, y);
+    }
+    
+    path.lineTo(size.width, size.height);
+    path.close();
+    
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _LiquidPainter oldDelegate) => true;
+}
+
 class _DraggableTimerIndicator extends StatefulWidget {
   final double radius;
   final int initialMinutes;
@@ -370,35 +422,22 @@ class _DraggableTimerIndicator extends StatefulWidget {
 
 class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
   late double _currentAngle;
+  int _lastMinute = 0;
 
   @override
   void initState() {
     super.initState();
     _currentAngle = _minutesToAngle(widget.initialMinutes);
+    _lastMinute = widget.initialMinutes;
   }
 
-  @override
-  void didUpdateWidget(covariant _DraggableTimerIndicator oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialMinutes != widget.initialMinutes) {
-      setState(() {
-        _currentAngle = _minutesToAngle(widget.initialMinutes);
-      });
-    }
-  }
-
-  // Calcola l'angolo rispetto al centro del cerchio
   double _calculateAngle(Offset center, Offset point) {
     return atan2(point.dy - center.dy, point.dx - center.dx);
   }
 
-  // Converte angolo (0 a 2π) in minuti (1 a 60)
   int _angleToMinutes(double angle) {
-    // Normalizza l'angolo a 0-360 gradi (da -π a π)
-    double normalizedAngle = angle + pi / 2; // Inizia da -π/2 (top)
+    double normalizedAngle = angle + pi / 2;
     if (normalizedAngle < 0) normalizedAngle += 2 * pi;
-
-    // Mappa 0-2π a 1-60 minuti
     int minutes = ((normalizedAngle / (2 * pi)) * 59).toInt() + 1;
     return minutes.clamp(1, 60);
   }
@@ -412,53 +451,45 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
   @override
   Widget build(BuildContext context) {
     final center = Offset(widget.radius, widget.radius);
-    final buttonX = cos(_currentAngle) * (widget.radius - 12);
-    final buttonY = sin(_currentAngle) * (widget.radius - 12);
+    final buttonX = cos(_currentAngle) * (widget.radius - 10);
+    final buttonY = sin(_currentAngle) * (widget.radius - 10);
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onPanUpdate: (details) {
-        // Calcola l'angolo corrente basato sulla posizione del dito
         final angle = _calculateAngle(center, details.localPosition);
+        final minutes = _angleToMinutes(angle);
+        
+        if (minutes != _lastMinute) {
+          HapticFeedback.selectionClick();
+          _lastMinute = minutes;
+        }
 
-        setState(() {
-          _currentAngle = angle;
-        });
-
-        // Invia i minuti calcolati
-        widget.onMinutesChanged(_angleToMinutes(angle));
+        setState(() => _currentAngle = angle);
+        widget.onMinutesChanged(minutes);
       },
       child: Stack(
         alignment: Alignment.center,
-        clipBehavior: Clip.none,
         children: [
-          // Area trasparente per il tracking del dito
-          Container(
-            width: widget.radius * 2,
-            height: widget.radius * 2,
-            color: Colors.transparent,
-          ),
-          // Pulsantino trascinabile - più grande e verde come in group
+          Container(width: widget.radius * 2 + 60, height: widget.radius * 2 + 60, color: Colors.transparent),
           Positioned(
-            left: buttonX + widget.radius - 26,
-            top: buttonY + widget.radius - 26,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: AppColors.secondary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.textPrimary, width: 4),
-                  boxShadow: AppShadows.glow(AppColors.secondary),
-                ),
-                child: const Icon(
-                  AppIcons.drag,
-                  color: AppColors.textPrimary,
-                  size: 28,
-                ),
+            left: buttonX + widget.radius - 20,
+            top: buttonY + widget.radius - 20,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.textPrimary, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.5),
+                    blurRadius: 15,
+                  )
+                ],
               ),
+              child: const Icon(AppIcons.drag, size: 20, color: Colors.black),
             ),
           ),
         ],
@@ -466,3 +497,4 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
     );
   }
 }
+

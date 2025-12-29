@@ -1,27 +1,30 @@
+import 'dart:ui';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 /// Design System centralizzato per Powerful Students
-/// Garantisce coerenza visiva su tutte le schermate
+/// Evoluto per "Liquid Glass" e stile iOS 18/26
 class AppColors {
-  // Colori primari
-  static const primary = Color(0xFFF4C3F1); // Rosa - azioni principali
-  static const secondary = Color(0xFFA9FFA6); // Verde - interattivi
+  // Colori primari invertiti: Verde predominante, Rosa per CTA
+  static const primary = Color(0xFFA9FFA6); // Verde (Branding principale)
+  static const cta = Color(0xFFF4C3F1);     // Rosa (Call to Action)
+  static const accent = Color(0xFFA9FFA6);  // Alias per il verde
+  
+  // Backgrounds - Gradienti con più contrasto
+  static const bgStart = Color(0xFFD1D1D1);
+  static const bgEnd = Color(0xFFB0B0B0);
+  
+  static const background = Color(0xFFF2F2F7);
+  static const surface = Color(0xFFFFFFFF);
+  
+  // Vetro (Glassmorphism) con più contrasto
+  static Color glass(double opacity) => Colors.white.withValues(alpha: opacity);
+  static const glassBorder = Color(0x66000000); // Più scuro per contrasto
+  
+  // Testi con massimo contrasto
+  static const textPrimary = Color(0xFF000000);
+  static const textSecondary = Color(0xFF1C1C1E); // iOS Darker Secondary Label
 
-  // Backgrounds
-  static const background = Color(0xFFE7E7E7); // Grigio chiaro
-  static const surface = Color(0xFFE9E9E9); // Grigio cards
-  static const surfaceLight = Colors.white;
-
-  // Testi
-  static const textPrimary = Color(0xFF2A2A2A); // Nero soft
-  static const textSecondary = Color(0xFF2F2F2F); // Con opacity 0.8
-
-  // Stati
-  static const success = Color(0xFFA9FFA6);
-  static const error = Color(0xFFFF6B6B);
-  static const warning = Color(0xFFFFA06B);
-
-  // Helpers per opacity
   static Color textSecondaryWith(double opacity) {
     return textSecondary.withValues(alpha: opacity);
   }
@@ -30,82 +33,61 @@ class AppColors {
     return primary.withValues(alpha: opacity);
   }
 
-  static Color secondaryWith(double opacity) {
-    return secondary.withValues(alpha: opacity);
+  static Color ctaWith(double opacity) {
+    return cta.withValues(alpha: opacity);
   }
 }
 
 class AppTypography {
-  static const fontFamily = 'Helvetica';
+  static const fontFamily = '.SF Pro Text';
 
-  // Display (titoli grandi)
   static const headline = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.w700,
+    fontSize: 28,
+    fontWeight: FontWeight.w800, // Più bold per contrasto
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
-    letterSpacing: 0.5,
+    letterSpacing: -0.5,
   );
 
-  // Titoli sezioni
   static const title = TextStyle(
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
-    letterSpacing: 0.5,
+    letterSpacing: -0.4,
   );
 
-  // Sottotitoli
   static const subtitle = TextStyle(
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
-    letterSpacing: 0.3,
+    letterSpacing: -0.4,
   );
 
-  // Body text
   static const body = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
+    fontSize: 17,
+    fontWeight: FontWeight.w500,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
-    letterSpacing: 0.3,
+    letterSpacing: -0.4,
   );
 
-  // Caption
   static const caption = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textPrimary,
-    fontFamily: fontFamily,
-    letterSpacing: 0.3,
+    fontSize: 15,
+    fontWeight: FontWeight.w600, // Più peso
+    color: AppColors.textSecondary,
+    letterSpacing: -0.2,
   );
 
-  // Label (piccolo)
   static const label = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textPrimary,
-    fontFamily: fontFamily,
-    letterSpacing: 0.3,
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textSecondary,
   );
 
-  // Timer grande
   static const timerLarge = TextStyle(
-    fontSize: 48,
-    fontWeight: FontWeight.bold,
+    fontSize: 72, // Leggermente più piccolo da 84
+    fontWeight: FontWeight.w300,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
-  );
-
-  // Timer medio
-  static const timerMedium = TextStyle(
-    fontSize: 42,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-    fontFamily: fontFamily,
+    fontFeatures: [FontFeature.tabularFigures()],
+    letterSpacing: -2.0,
   );
 }
 
@@ -113,156 +95,66 @@ class AppSpacing {
   static const xs = 8.0;
   static const sm = 16.0;
   static const md = 24.0;
-  static const lg = 40.0;
-  static const xl = 60.0;
+  static const lg = 32.0;
+  static const xl = 48.0;
 }
 
 class AppRadius {
-  static const sm = 12.0;
-  static const md = 20.0;
-  static const lg = 24.0;
+  static const sm = 10.0;
+  static const md = 14.0;
+  static const lg = 20.0;
+  static const xl = 28.0;
 
   static BorderRadius circular(double radius) => BorderRadius.circular(radius);
-  static RoundedRectangleBorder roundedRectangle(double radius) {
-    return RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
-  }
-}
-
-class AppShadows {
-  static List<BoxShadow> sm = [
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.05),
-      blurRadius: 8,
-      offset: const Offset(0, 2),
-    ),
-  ];
-
-  static List<BoxShadow> md = [
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.08),
-      blurRadius: 12,
-      offset: const Offset(0, 4),
-    ),
-  ];
-
-  static List<BoxShadow> lg = [
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.1),
-      blurRadius: 20,
-      offset: const Offset(0, 8),
-    ),
-  ];
-
-  static List<BoxShadow> glow(Color color, {double alpha = 0.5}) {
-    return [
-      BoxShadow(
-        color: color.withValues(alpha: alpha),
-        blurRadius: 16,
-        spreadRadius: 2,
-        offset: const Offset(0, 4),
-      ),
-    ];
-  }
-}
-
-class AppButtons {
-  // Pulsante primario (Study/Inizia)
-  static ButtonStyle primary({bool enabled = true}) {
-    return ElevatedButton.styleFrom(
-      backgroundColor: enabled ? AppColors.primary : AppColors.surface,
-      foregroundColor: AppColors.textPrimary,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xl,
-        vertical: 18,
-      ),
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      shape: AppRadius.roundedRectangle(AppRadius.sm),
-      disabledBackgroundColor: AppColors.surface,
-    ).copyWith(elevation: WidgetStateProperty.all(0));
-  }
-
-  // Pulsante secondario (Cancel)
-  static ButtonStyle secondary() {
-    return ElevatedButton.styleFrom(
-      backgroundColor: AppColors.surface,
-      foregroundColor: AppColors.textPrimary,
-      padding: const EdgeInsets.symmetric(vertical: 18),
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      shape: AppRadius.roundedRectangle(AppRadius.sm),
-    ).copyWith(elevation: WidgetStateProperty.all(0));
-  }
-
-  // Text style per pulsanti
-  static const textStyle = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-    fontFamily: AppTypography.fontFamily,
-  );
 }
 
 class AppDecorations {
-  // Badge/Pill (es. modalità selezionata)
-  static BoxDecoration badge({Color? color}) {
-    return BoxDecoration(
-      color: color ?? AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      boxShadow: AppShadows.sm,
+  // Effetto Liquid Glass
+  static Widget glassContainer({
+    required Widget child,
+    double blur = 20,
+    double opacity = 0.1,
+    BorderRadius? borderRadius,
+    EdgeInsetsGeometry? padding,
+    Border? border,
+  }) {
+    return ClipRRect(
+      borderRadius: borderRadius ?? BorderRadius.circular(AppRadius.lg),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: opacity),
+            borderRadius: borderRadius ?? BorderRadius.circular(AppRadius.lg),
+            border: border ?? Border.all(color: AppColors.glassBorder, width: 0.5),
+          ),
+          child: child,
+        ),
+      ),
     );
   }
 
-  // Card standard
   static BoxDecoration card({required bool isSelected, Color? selectedColor}) {
     return BoxDecoration(
-      color: isSelected
-          ? (selectedColor ?? AppColors.secondary)
-          : AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.md),
+      color: isSelected ? (selectedColor ?? AppColors.primary) : AppColors.glass(0.4),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       border: Border.all(
-        color: isSelected
-            ? AppColors.textPrimary
-            : AppColors.textPrimary.withValues(alpha: 0.3),
-        width: 2,
+        color: isSelected ? AppColors.textPrimary : AppColors.glassBorder,
+        width: isSelected ? 3 : 1.5, // Più spessore per contrasto
       ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: isSelected ? 0.08 : 0.05),
-          blurRadius: isSelected ? 12 : 8,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    );
-  }
-
-  // Cerchio timer
-  static BoxDecoration timerCircle({bool withBorder = true}) {
-    return BoxDecoration(
-      color: AppColors.surfaceLight,
-      shape: BoxShape.circle,
-      border: withBorder
-          ? Border.all(color: AppColors.secondary, width: 8)
-          : null,
-      boxShadow: AppShadows.lg,
-    );
-  }
-
-  // Container circolare (es. icone)
-  static BoxDecoration circleContainer({Color? color}) {
-    return BoxDecoration(
-      color: color ?? AppColors.surface,
-      shape: BoxShape.circle,
     );
   }
 }
 
 class AppIcons {
-  static const soloMode = Icons.person;
-  static const groupMode = Icons.group;
-  static const fire = Icons.local_fire_department;
-  static const burn = Icons.whatshot;
-  static const back = Icons.arrow_back;
-  static const check = Icons.check_circle;
-  static const share = Icons.share;
-  static const drag = Icons.drag_indicator;
+  static const soloMode = CupertinoIcons.person_fill;
+  static const groupMode = CupertinoIcons.person_2_fill;
+  static const fire = CupertinoIcons.flame_fill;
+  static const burn = CupertinoIcons.bolt_fill;
+  static const back = CupertinoIcons.chevron_back;
+  static const check = CupertinoIcons.checkmark_circle_fill;
+  static const share = CupertinoIcons.share;
+  static const drag = CupertinoIcons.slider_horizontal_3;
 }
+

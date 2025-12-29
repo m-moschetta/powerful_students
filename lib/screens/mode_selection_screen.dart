@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:powerful_students/models/study_session.dart';
 import 'package:powerful_students/providers/pomodoro_provider.dart';
@@ -15,6 +17,7 @@ class ModeSelectionScreen extends StatelessWidget {
         selectedMode == StudyMode.solo || selectedMode == StudyMode.group;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -27,47 +30,70 @@ class ModeSelectionScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: AppSpacing.xl),
-                      const Text('Scegli modalità', style: AppTypography.title),
-                      const SizedBox(height: AppSpacing.md),
-                      ModeOptionCard(
-                        title: 'Solo',
-                        subtitle: 'Studia per conto tuo',
-                        icon: Icons.person,
-                        isSelected: selectedMode == StudyMode.solo,
-                        onTap: () => pomodoro.selectMode(StudyMode.solo),
+                      const Text(
+                        'Powerful Students',
+                        style: AppTypography.headline,
+                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 12),
-                      ModeOptionCard(
-                        title: 'Group',
-                        subtitle: 'Studia in compagnia',
-                        icon: Icons.group,
-                        isSelected: selectedMode == StudyMode.group,
-                        onTap: () => pomodoro.selectMode(StudyMode.group),
+                      const SizedBox(height: AppSpacing.xs),
+                      const Text(
+                        'Scegli modalità',
+                        style: AppTypography.caption,
+                        textAlign: TextAlign.center,
                       ),
+                      const SizedBox(height: AppSpacing.xl),
+                      
+                      AppDecorations.glassContainer(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        child: Column(
+                          children: [
+                            ModeOptionCard(
+                              title: 'Solo',
+                              subtitle: 'Studia per conto tuo',
+                              icon: AppIcons.soloMode,
+                              isSelected: selectedMode == StudyMode.solo,
+                              onTap: () => pomodoro.selectMode(StudyMode.solo),
+                            ),
+                            const Divider(height: 1, color: AppColors.glassBorder),
+                            ModeOptionCard(
+                              title: 'Group',
+                              subtitle: 'Studia in compagnia',
+                              icon: AppIcons.groupMode,
+                              isSelected: selectedMode == StudyMode.group,
+                              onTap: () => pomodoro.selectMode(StudyMode.group),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
                       const Spacer(),
-                      ElevatedButton(
-                        onPressed: !hasSelection
-                            ? null
-                            : () {
-                                if (selectedMode == StudyMode.group) {
-                                  Navigator.pushNamed(context, '/group-room');
-                                } else {
-                                  Navigator.pushReplacementNamed(
-                                    context,
-                                    '/timer',
-                                  );
-                                }
-                              },
-                        style: AppButtons.primary(enabled: hasSelection),
-                        child: Text(
-                          'Inizia',
-                          style: AppButtons.textStyle.copyWith(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                      
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                        child: CupertinoButton(
+                          onPressed: !hasSelection
+                              ? null
+                              : () {
+                                  HapticFeedback.heavyImpact();
+                                  if (selectedMode == StudyMode.group) {
+                                    Navigator.pushNamed(context, '/group-room');
+                                  } else {
+                                    Navigator.pushNamed(context, '/timer');
+                                  }
+                                },
+                          color: AppColors.cta, // Rosa per CTA come richiesto
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          child: const Text(
+                            'INIZIA ORA',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 18,
+                              letterSpacing: 1.2,
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.xl),
                     ],
                   ),
                 ),
@@ -78,7 +104,6 @@ class ModeSelectionScreen extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class ModeOptionCard extends StatelessWidget {
@@ -101,44 +126,40 @@ class ModeOptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(20),
-        decoration: AppDecorations.card(
-          isSelected: isSelected,
-          selectedColor: AppColors.secondary,
-        ),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         child: Row(
           children: [
             Container(
-              width: 60,
-              height: 60,
-              decoration: AppDecorations.circleContainer(
-                color: isSelected ? AppColors.surface : AppColors.background,
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : AppColors.glass(0.1),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: isSelected ? Border.all(color: AppColors.textPrimary, width: 2) : null,
               ),
-              child: Icon(icon, size: 30, color: AppColors.textPrimary),
+              child: Icon(
+                icon,
+                size: 24,
+                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+              ),
             ),
-            const SizedBox(width: 20),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: AppTypography.subtitle),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textSecondaryWith(0.8),
-                    ),
-                  ),
+                  Text(subtitle, style: AppTypography.caption),
                 ],
               ),
             ),
             if (isSelected)
               const Icon(
                 AppIcons.check,
-                color: AppColors.textPrimary,
-                size: 28,
+                color: AppColors.primary,
+                size: 24,
               ),
           ],
         ),
@@ -146,3 +167,4 @@ class ModeOptionCard extends StatelessWidget {
     );
   }
 }
+

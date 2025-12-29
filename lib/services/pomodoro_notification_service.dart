@@ -113,7 +113,7 @@ class PomodoroNotificationService {
 
   Future<void> _triggerVibration() async {
     try {
-      final bool? hasVibrator = await Vibration.hasVibrator();
+      final bool hasVibrator = await Vibration.hasVibrator();
       if (hasVibrator == true) {
         await Vibration.vibrate(duration: 1000);
       }
