@@ -65,6 +65,9 @@ dependencies:
   firebase_auth: ^5.3.1
   cloud_firestore: ^5.4.4
 
+  # Keep screen awake during study sessions
+  wakelock_plus: ^1.2.8
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1383,6 +1383,8 @@ PODS:
     - nanopb/encode (= 3.30910.0)
   - nanopb/decode (3.30910.0)
   - nanopb/encode (3.30910.0)
+  - package_info_plus (0.4.5):
+    - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -1390,6 +1392,8 @@ PODS:
   - share_plus (0.0.1):
     - Flutter
   - vibration (3.0.0):
+    - Flutter
+  - wakelock_plus (0.0.1):
     - Flutter
 
 DEPENDENCIES:
@@ -1401,9 +1405,11 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_timezone (from `.symlinks/plugins/flutter_timezone/ios`)
+  - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - vibration (from `.symlinks/plugins/vibration/ios`)
+  - wakelock_plus (from `.symlinks/plugins/wakelock_plus/ios`)
 
 SPEC REPOS:
   trunk:
@@ -1444,12 +1450,16 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
   flutter_timezone:
     :path: ".symlinks/plugins/flutter_timezone/ios"
+  package_info_plus:
+    :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   share_plus:
     :path: ".symlinks/plugins/share_plus/ios"
   vibration:
     :path: ".symlinks/plugins/vibration/ios"
+  wakelock_plus:
+    :path: ".symlinks/plugins/wakelock_plus/ios"
 
 SPEC CHECKSUMS:
   abseil: a05cc83bf02079535e17169a73c5be5ba47f714b
@@ -1478,10 +1488,12 @@ SPEC CHECKSUMS:
   GTMSessionFetcher: fc75fc972958dceedee61cb662ae1da7a83a91cf
   leveldb-library: cc8b8f8e013647a295ad3f8cd2ddf49a6f19be19
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
+  package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a
   vibration: 69774ad57825b11c951ee4c46155f455d7a592ce
+  wakelock_plus: e29112ab3ef0b318e58cfa5c32326458be66b556
 
 PODFILE CHECKSUM: 3b0359afafad6aa3c7c16c3bb483011d0410d91c
 

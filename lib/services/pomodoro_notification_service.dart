@@ -14,6 +14,14 @@ class PomodoroNotificationService {
       FlutterLocalNotificationsPlugin();
   AudioPlayer? _audioPlayer;
 
+  // Toggle per abilitare/disabilitare il suono
+  bool _soundEnabled = true;
+  bool get soundEnabled => _soundEnabled;
+
+  void setSoundEnabled(bool enabled) {
+    _soundEnabled = enabled;
+  }
+
   Future<void> initialize({required VoidCallback onNotificationTap}) async {
     try {
       _audioPlayer = AudioPlayer();
@@ -124,6 +132,12 @@ class PomodoroNotificationService {
   }
 
   Future<void> _playNotificationSound() async {
+    // Skip se il suono è disabilitato
+    if (!_soundEnabled) {
+      debugPrint('Sound disabled by user, skip audio');
+      return;
+    }
+
     if (_audioPlayer == null) {
       debugPrint('Audio player unavailable, skip sound');
       return;

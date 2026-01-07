@@ -35,6 +35,18 @@ class PomodoroProvider extends ChangeNotifier {
   bool get isBurnMode => _isBurnMode;
   int get completedPomodoros => _completedPomodoros;
   int get defaultWorkDuration => _defaultWorkDuration;
+  bool get soundEnabled => _notificationService.soundEnabled;
+
+  // Toggle per il suono
+  void toggleSound() {
+    _notificationService.setSoundEnabled(!_notificationService.soundEnabled);
+    notifyListeners();
+  }
+
+  void setSoundEnabled(bool enabled) {
+    _notificationService.setSoundEnabled(enabled);
+    notifyListeners();
+  }
 
   // Inizializza le notifiche
   Future<void> initializeNotifications() async {
@@ -183,18 +195,15 @@ class PomodoroProvider extends ChangeNotifier {
       final sessionType = _currentSession?.type ?? SessionType.work;
       _notificationService.handleSessionCompletionFeedback(sessionType);
 
-      // Logica Pomodoro: dopo 4 pomodori, pausa lunga
+      // Incrementa il contatore pomodori completati
       if (_currentSession?.type == SessionType.work) {
         _completedPomodoros++;
-        if (_completedPomodoros % 4 == 0) {
-          startLongBreak();
-        } else {
-          startShortBreak();
-        }
-      } else {
-        // Dopo una pausa, torna al lavoro
-        startWorkSession();
       }
+
+      // Non auto-transire alla prossima sessione
+      // L'utente deve poter scegliere la durata della prossima sessione
+      _currentSession = null;
+      notifyListeners();
     } finally {
       _isHandlingCompletion = false;
     }

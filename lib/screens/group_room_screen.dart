@@ -1,11 +1,11 @@
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:powerful_students/models/study_session.dart';
 import 'package:powerful_students/providers/room_provider.dart';
 import 'package:powerful_students/providers/pomodoro_provider.dart';
@@ -18,7 +18,40 @@ class GroupRoomScreen extends StatefulWidget {
   State<GroupRoomScreen> createState() => _GroupRoomScreenState();
 }
 
-class _GroupRoomScreenState extends State<GroupRoomScreen> {
+class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingObserver {
+  bool _sessionFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WakelockPlus.enable();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    WakelockPlus.disable();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final provider = context.read<PomodoroProvider>();
+    final roomProvider = context.read<RoomProvider>();
+
+    // Se l'app va in background con burn mode attivo e sessione in corso, la sessione fallisce per tutti
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (provider.isBurnMode && provider.isRunning && provider.currentSession != null) {
+        provider.stopTimer();
+        roomProvider.clearTimerState();
+        setState(() {
+          _sessionFailed = true;
+        });
+      }
+    }
+  }
+
   void _showSnack(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -40,6 +73,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
   Future<void> _createRoom(RoomProvider provider) async {
     try {
       await provider.createRoom();
+      _showShareMessage(provider.currentRoomCode ?? '');
     } catch (error) {
       _handleRoomError(error);
     }
@@ -53,7 +87,13 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
     }
   }
 
-  void _shareRoomCode(String roomCode) {
+  void _showShareMessage(String roomCode) {
+    final pomodoroProvider = context.read<PomodoroProvider>();
+    final durationMinutes = pomodoroProvider.defaultWorkDuration ~/ 60;
+    final message = 'Unisciti alla mia sessione di studio!\n'
+        'Codice: $roomCode\n'
+        'Durata: $durationMinutes minuti';
+
     try {
       final box = context.findRenderObject() as RenderBox?;
       final shareOrigin = box != null
@@ -61,7 +101,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
           : const Rect.fromLTWH(0, 0, 1, 1);
 
       Share.share(
-        'Unisciti alla mia stanza di studio!\nCodice: $roomCode',
+        message,
         subject: 'Codice Stanza Powerful Students',
         sharePositionOrigin: shareOrigin,
       );
@@ -71,9 +111,15 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
   }
 
   void _copyRoomCode(String roomCode) {
+    final pomodoroProvider = context.read<PomodoroProvider>();
+    final durationMinutes = pomodoroProvider.defaultWorkDuration ~/ 60;
+    final message = 'Unisciti alla mia sessione di studio!\n'
+        'Codice: $roomCode\n'
+        'Durata: $durationMinutes minuti';
+
     try {
-      Clipboard.setData(ClipboardData(text: roomCode));
-      _showSnack('Codice copiato!');
+      Clipboard.setData(ClipboardData(text: message));
+      _showSnack('Messaggio copiato!');
     } catch (e) {
       _showSnack('Errore nella copia');
     }
@@ -86,16 +132,29 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
     showCupertinoDialog(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
-        title: const Text('Entra in una stanza'),
+        title: const Text(
+          'Entra in una stanza',
+          style: TextStyle(fontSize: 18),
+        ),
         content: Padding(
-          padding: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.only(top: 20),
           child: CupertinoTextField(
             controller: controller,
             placeholder: 'Codice a 9 cifre',
             maxLength: 9,
             textCapitalization: TextCapitalization.characters,
             textAlign: TextAlign.center,
-            style: const TextStyle(letterSpacing: 2),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            style: const TextStyle(
+              fontSize: 20,
+              letterSpacing: 4,
+              fontWeight: FontWeight.w600,
+            ),
+            placeholderStyle: TextStyle(
+              fontSize: 16,
+              letterSpacing: 2,
+              color: CupertinoColors.placeholderText,
+            ),
           ),
         ),
         actions: [
@@ -107,9 +166,10 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
             isDefaultAction: true,
             onPressed: () async {
               if (controller.text.length == 9) {
+                final navigator = Navigator.of(dialogContext);
                 try {
                   await roomProvider.joinRoom(controller.text);
-                  if (mounted) Navigator.pop(dialogContext);
+                  if (mounted) navigator.pop();
                 } catch (e) {
                   _handleRoomError(e);
                 }
@@ -127,45 +187,115 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Consumer<RoomProvider>(
-            builder: (context, roomProvider, _) {
-              final hasRoom = roomProvider.hasRoom;
-              return Column(
+        child: Consumer2<RoomProvider, PomodoroProvider>(
+          builder: (context, roomProvider, pomodoroProvider, _) {
+            // Mostra schermata di fallimento se la sessione è fallita
+            if (_sessionFailed) {
+              return _buildFailedScreen(context, roomProvider);
+            }
+
+            final hasRoom = roomProvider.hasRoom;
+            final isOwner = roomProvider.isOwner;
+            final session = pomodoroProvider.currentSession;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: Column(
                 children: [
-                  _buildHeader(context),
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildHeader(context, roomProvider, pomodoroProvider, isOwner, session != null),
                   const SizedBox(height: AppSpacing.lg),
                   if (!hasRoom)
-                    _buildCreateJoinSection(roomProvider)
+                    _buildCreateJoinSection(roomProvider, pomodoroProvider)
                   else ...[
-                    _buildRoomInfo(roomProvider),
+                    _buildRoomInfo(roomProvider, pomodoroProvider, isOwner),
                     const Spacer(),
-                    Consumer<PomodoroProvider>(
-                      builder: (context, pomodoroProvider, _) {
-                        return _buildCircularTimer(pomodoroProvider);
-                      },
-                    ),
+                    _buildCircularTimer(pomodoroProvider, isOwner),
                     const Spacer(),
                   ],
                   const Spacer(),
-                  _buildBottomActions(hasRoom, roomProvider),
+                  _buildBottomActions(hasRoom, roomProvider, pomodoroProvider, isOwner),
                   const SizedBox(height: AppSpacing.lg),
                 ],
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildFailedScreen(BuildContext context, RoomProvider roomProvider) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            CupertinoIcons.xmark_circle_fill,
+            size: 120,
+            color: Colors.red,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'SESSIONE FALLITA',
+            style: AppTypography.headline.copyWith(
+              color: Colors.red,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Qualcuno ha lasciato l\'app durante una sessione con modalità Flash attiva.',
+            style: AppTypography.body.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              await _leaveRoom(roomProvider);
+              setState(() {
+                _sessionFailed = false;
+              });
+              if (mounted) navigator.pop();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 18),
+              decoration: BoxDecoration(
+                color: AppColors.cta,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: const Text(
+                'TORNA INDIETRO',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, RoomProvider roomProvider, PomodoroProvider pomodoroProvider, bool isOwner, bool isSessionActive) {
     return Row(
       children: [
         CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () => Navigator.pop(context),
+          onPressed: () async {
+            final navigator = Navigator.of(context);
+            if (roomProvider.hasRoom) {
+              await _leaveRoom(roomProvider);
+            }
+            if (mounted) navigator.pop();
+          },
           child: const Row(
             children: [
               Icon(AppIcons.back, color: AppColors.textPrimary, size: 28),
@@ -181,43 +311,80 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
           ),
         ),
         const Spacer(),
-        AppDecorations.glassContainer(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(
-            children: [
-              Icon(AppIcons.groupMode, size: 16, color: AppColors.primary),
-              const SizedBox(width: 8),
-              const Text('Group', style: AppTypography.label),
-            ],
+        // Mostra flash mode toggle solo per l'host e solo quando non c'è sessione attiva
+        if (isOwner || !roomProvider.hasRoom)
+          AppDecorations.glassContainer(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              children: [
+                Icon(
+                  AppIcons.burn,
+                  size: 16,
+                  color: isSessionActive
+                      ? AppColors.textSecondary.withValues(alpha: 0.4)
+                      : AppColors.textPrimary,
+                ),
+                const SizedBox(width: 4),
+                CupertinoSwitch(
+                  value: pomodoroProvider.isBurnMode,
+                  onChanged: isSessionActive
+                      ? null
+                      : (value) {
+                          HapticFeedback.mediumImpact();
+                          pomodoroProvider.toggleBurnMode();
+                        },
+                  activeTrackColor: AppColors.primary,
+                ),
+              ],
+            ),
+          )
+        else
+          // Per chi non è owner, mostra solo badge Group
+          AppDecorations.glassContainer(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              children: [
+                Icon(AppIcons.groupMode, size: 16, color: AppColors.primary),
+                const SizedBox(width: 8),
+                const Text('Group', style: AppTypography.label),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
 
-  Widget _buildCreateJoinSection(RoomProvider provider) {
+  Widget _buildCreateJoinSection(RoomProvider provider, PomodoroProvider pomodoroProvider) {
     return Column(
       children: [
+        const SizedBox(height: AppSpacing.md),
+        // Prima: seleziona il tempo
+        _buildSetupTimer(pomodoroProvider),
         const SizedBox(height: AppSpacing.xl),
+        // Poi: crea la stanza
         CupertinoButton(
           onPressed: provider.isCreatingRoom
               ? null
               : () => _createRoom(provider),
-          child: AppDecorations.glassContainer(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            borderRadius: BorderRadius.circular(100),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            decoration: BoxDecoration(
+              color: AppColors.cta,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
             child: provider.isCreatingRoom
                 ? const CupertinoActivityIndicator()
-                : const Icon(
-                    CupertinoIcons.add,
-                    size: 48,
-                    color: AppColors.textPrimary,
+                : const Text(
+                    'CREA STANZA',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
                   ),
           ),
         ),
-        const SizedBox(height: 16),
-        const Text('Crea una stanza', style: AppTypography.subtitle),
-        const SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.lg),
         CupertinoButton(
           onPressed: provider.isJoiningRoom ? null : _showJoinRoomDialog,
           child: AppDecorations.glassContainer(
@@ -232,52 +399,130 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
     );
   }
 
-  Widget _buildRoomInfo(RoomProvider provider) {
+  Widget _buildSetupTimer(PomodoroProvider provider) {
+    return AppDecorations.glassContainer(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      borderRadius: BorderRadius.circular(155),
+      child: SizedBox(
+        width: 290,
+        height: 290,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _formatDuration(provider.defaultWorkDuration),
+                  style: AppTypography.timerLarge,
+                ),
+                const Text('IMPOSTA TEMPO', style: AppTypography.label),
+              ],
+            ),
+            _buildTimerPoints(),
+            _DraggableTimerIndicator(
+              radius: 125.0,
+              initialMinutes: provider.defaultWorkDuration ~/ 60,
+              onMinutesChanged: (minutes) {
+                provider.setDefaultWorkDurationMinutes(minutes);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoomInfo(RoomProvider provider, PomodoroProvider pomodoroProvider, bool isOwner) {
+    final room = provider.room;
+    final members = room?.memberIds ?? [];
+    // Escludi l'owner dalla lista dei membri visualizzati (solo chi si è unito)
+    final joinedMembers = members.where((id) => id != room?.ownerId).toList();
+    final durationMinutes = pomodoroProvider.defaultWorkDuration ~/ 60;
+
     return AppDecorations.glassContainer(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [
+          // Codice stanza con dimensioni ridotte
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 provider.currentRoomCode ?? '',
                 style: AppTypography.title.copyWith(
-                  letterSpacing: 4,
-                  fontSize: 24,
+                  letterSpacing: 2, // Ridotto da 4 a 2
+                  fontSize: 20, // Ridotto da 24 a 20
                 ),
               ),
-              const SizedBox(width: 16),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: () => _copyRoomCode(provider.currentRoomCode!),
-                child: const Icon(CupertinoIcons.doc_on_doc, size: 20),
-              ),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: () => _shareRoomCode(provider.currentRoomCode!),
-                child: const Icon(CupertinoIcons.share, size: 20),
-              ),
+              const SizedBox(width: 12),
+              if (isOwner) ...[
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(32, 32),
+                  onPressed: () => _copyRoomCode(provider.currentRoomCode!),
+                  child: const Icon(CupertinoIcons.doc_on_doc, size: 18),
+                ),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(32, 32),
+                  onPressed: () => _showShareMessage(provider.currentRoomCode!),
+                  child: const Icon(CupertinoIcons.share, size: 18),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),
+          // Mostra durata sessione
           Text(
-            '${provider.memberCount} membri connessi',
+            'Sessione di $durationMinutes minuti',
             style: AppTypography.caption,
           ),
+          // Mostra avatar dei membri che si sono uniti (solo se ce ne sono)
+          if (joinedMembers.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: joinedMembers.map((memberId) {
+                // Genera iniziali dal memberId (prime 2 lettere)
+                final initials = memberId.substring(0, 2).toUpperCase();
+                return Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primary, width: 2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      initials,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildCircularTimer(PomodoroProvider provider) {
+  Widget _buildCircularTimer(PomodoroProvider provider, bool isOwner) {
     final session = provider.currentSession;
 
     return Center(
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Ghiera di contrasto esterna (Ring) con più contrasto
+          // Ring esterno
           Container(
             width: 310,
             height: 310,
@@ -298,7 +543,8 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
           ),
 
           if (session == null)
-            _buildSetupTimer(provider)
+            // Per chi non è owner, mostra solo il timer con la durata impostata dall'host
+            _buildWaitingTimer(provider, isOwner)
           else
             _buildActiveTimer(session),
         ],
@@ -306,38 +552,45 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
     );
   }
 
-  Widget _buildSetupTimer(PomodoroProvider provider) {
-    return AppDecorations.glassContainer(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      borderRadius: BorderRadius.circular(150),
-      child: SizedBox(
-        width: 280,
-        height: 280,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _formatDuration(provider.defaultWorkDuration),
-                  style: AppTypography.timerLarge,
+  Widget _buildWaitingTimer(PomodoroProvider provider, bool isOwner) {
+    // Chi non è owner non può modificare la durata
+    if (!isOwner) {
+      return AppDecorations.glassContainer(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        borderRadius: BorderRadius.circular(155),
+        child: SizedBox(
+          width: 290,
+          height: 290,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _formatDuration(provider.defaultWorkDuration),
+                style: AppTypography.timerLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'IN ATTESA',
+                style: AppTypography.label.copyWith(
+                  color: AppColors.textSecondary,
                 ),
-                const Text('IMPOSTA TEMPO', style: AppTypography.label),
-              ],
-            ),
-            _buildTimerPoints(),
-            _DraggableTimerIndicator(
-              radius: 130.0,
-              initialMinutes: provider.defaultWorkDuration ~/ 60,
-              onMinutesChanged: (minutes) {
-                provider.setDefaultWorkDurationMinutes(minutes);
-              },
-            ),
-          ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "L'host avvierà la sessione",
+                style: AppTypography.caption.copyWith(
+                  fontSize: 12,
+                  color: AppColors.textSecondary.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    }
+
+    // L'owner può modificare la durata
+    return _buildSetupTimer(provider);
   }
 
   Widget _buildActiveTimer(StudySession session) {
@@ -357,9 +610,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Liquid Animation
               _LiquidBackground(progress: session.progress),
-
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -398,7 +649,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
         final angle = (index * 6) * pi / 180;
         final isMajor = index % 5 == 0;
         return Transform.translate(
-          offset: Offset(cos(angle) * 120, sin(angle) * 120),
+          offset: Offset(cos(angle) * 115, sin(angle) * 115),
           child: Container(
             width: isMajor ? 4 : 2,
             height: isMajor ? 4 : 2,
@@ -414,54 +665,135 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> {
     );
   }
 
-  Widget _buildBottomActions(bool hasRoom, RoomProvider roomProvider) {
-    return Row(
-      children: [
-        Expanded(
-          child: CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () async {
-              HapticFeedback.lightImpact();
-              if (hasRoom) await _leaveRoom(roomProvider);
-              if (mounted) Navigator.pop(context);
-            },
-            child: AppDecorations.glassContainer(
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              child: const Center(
-                child: Text(
-                  'ESCI',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.w900,
+  Widget _buildBottomActions(bool hasRoom, RoomProvider roomProvider, PomodoroProvider pomodoroProvider, bool isOwner) {
+    final session = pomodoroProvider.currentSession;
+    final isRunning = pomodoroProvider.isRunning;
+
+    // Se non c'è stanza, non mostrare azioni (gestite nella sezione create/join)
+    if (!hasRoom) {
+      return const SizedBox.shrink();
+    }
+
+    // Se c'è una sessione attiva
+    if (session != null && isRunning) {
+      // Solo l'owner può stoppare la sessione
+      if (isOwner) {
+        return CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            pomodoroProvider.stopTimer();
+            roomProvider.clearTimerState();
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: Colors.red, width: 2),
+            ),
+            child: const Center(
+              child: Text(
+                'STOP',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+      // Chi non è owner non ha controlli durante la sessione
+      return const SizedBox.shrink();
+    }
+
+    // Prima di iniziare: solo l'owner può avviare
+    if (isOwner) {
+      return Row(
+        children: [
+          Expanded(
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () async {
+                HapticFeedback.lightImpact();
+                await _leaveRoom(roomProvider);
+                if (mounted) Navigator.pop(context);
+              },
+              child: AppDecorations.glassContainer(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                child: const Center(
+                  child: Text(
+                    'ESCI',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        if (hasRoom) ...[
           const SizedBox(width: 16),
           Expanded(
             child: CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () {
                 HapticFeedback.heavyImpact();
-                context.read<PomodoroProvider>().startWorkSession();
-                Navigator.pushNamed(context, '/timer');
+                pomodoroProvider.startWorkSession();
               },
-              color: AppColors.cta, // Rosa per CTA
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              child: const Text(
-                'INIZIA',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w900,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  color: AppColors.cta,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child: const Center(
+                  child: Text(
+                    'INIZIA',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
         ],
-      ],
+      );
+    }
+
+    // Chi non è owner può solo uscire
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: () async {
+        HapticFeedback.lightImpact();
+        await _leaveRoom(roomProvider);
+        if (mounted) Navigator.pop(context);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: Colors.red, width: 2),
+        ),
+        child: const Center(
+          child: Text(
+            'ESCI DALLA STANZA',
+            style: TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -602,21 +934,25 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
   int _angleToMinutes(double angle) {
     double normalizedAngle = angle + pi / 2;
     if (normalizedAngle < 0) normalizedAngle += 2 * pi;
-    int minutes = ((normalizedAngle / (2 * pi)) * 59).toInt() + 1;
+    int minutes = ((normalizedAngle / (2 * pi)) * 60).round();
+    if (minutes == 0) minutes = 60;
     return minutes.clamp(1, 60);
   }
 
   double _minutesToAngle(int minutes) {
     final clampedMinutes = minutes.clamp(1, 60);
-    final normalized = ((clampedMinutes - 1) / 59) * 2 * pi;
+    final effectiveMinutes = clampedMinutes == 60 ? 60 : clampedMinutes;
+    final normalized = (effectiveMinutes / 60) * 2 * pi;
     return normalized - pi / 2;
   }
 
   @override
   Widget build(BuildContext context) {
-    final center = Offset(widget.radius, widget.radius);
-    final buttonX = cos(_currentAngle) * (widget.radius - 10);
-    final buttonY = sin(_currentAngle) * (widget.radius - 10);
+    // Il centro è a metà del container (145, 145 per un container 290x290)
+    const double containerSize = 290;
+    final center = const Offset(containerSize / 2, containerSize / 2);
+    final buttonX = cos(_currentAngle) * (widget.radius - 15);
+    final buttonY = sin(_currentAngle) * (widget.radius - 15);
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -636,16 +972,16 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
         alignment: Alignment.center,
         children: [
           Container(
-            width: widget.radius * 2 + 60,
-            height: widget.radius * 2 + 60,
+            width: containerSize,
+            height: containerSize,
             color: Colors.transparent,
           ),
           Positioned(
-            left: buttonX + widget.radius - 20,
-            top: buttonY + widget.radius - 20,
+            left: buttonX + (containerSize / 2) - 18,
+            top: buttonY + (containerSize / 2) - 18,
             child: Container(
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 shape: BoxShape.circle,
@@ -657,7 +993,7 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
                   ),
                 ],
               ),
-              child: const Icon(AppIcons.drag, size: 20, color: Colors.black),
+              child: const Icon(AppIcons.drag, size: 18, color: Colors.black),
             ),
           ),
         ],

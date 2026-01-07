@@ -1,16 +1,54 @@
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:powerful_students/providers/pomodoro_provider.dart';
 import 'package:powerful_students/models/study_session.dart';
 import 'package:powerful_students/core/design_system.dart';
 
-class TimerScreen extends StatelessWidget {
+class TimerScreen extends StatefulWidget {
   const TimerScreen({super.key});
+
+  @override
+  State<TimerScreen> createState() => _TimerScreenState();
+}
+
+class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
+  bool _sessionFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Attiva wakelock per mantenere lo schermo acceso
+    WakelockPlus.enable();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // Disattiva wakelock quando si esce dalla schermata
+    WakelockPlus.disable();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final provider = context.read<PomodoroProvider>();
+
+    // Se l'app va in background con burn mode attivo e sessione in corso, la sessione fallisce
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (provider.isBurnMode && provider.isRunning && provider.currentSession != null) {
+        provider.stopTimer();
+        setState(() {
+          _sessionFailed = true;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +57,11 @@ class TimerScreen extends StatelessWidget {
       body: SafeArea(
         child: Consumer<PomodoroProvider>(
           builder: (context, provider, child) {
+            // Mostra schermata di fallimento se la sessione è fallita
+            if (_sessionFailed) {
+              return _buildFailedScreen(context);
+            }
+
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: Column(
@@ -41,7 +84,65 @@ class TimerScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildFailedScreen(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            CupertinoIcons.xmark_circle_fill,
+            size: 120,
+            color: Colors.red,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'SESSIONE FALLITA',
+            style: AppTypography.headline.copyWith(
+              color: Colors.red,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Hai lasciato l\'app durante una sessione con modalità Flash attiva.',
+            style: AppTypography.body.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              setState(() {
+                _sessionFailed = false;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 18),
+              decoration: BoxDecoration(
+                color: AppColors.cta,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: const Text(
+                'RIPROVA',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeader(BuildContext context, PomodoroProvider provider) {
+    final bool isSessionActive = provider.currentSession != null;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -60,22 +161,58 @@ class TimerScreen extends StatelessWidget {
             ],
           ),
         ),
-        AppDecorations.glassContainer(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(
-            children: [
-              const Icon(AppIcons.burn, size: 16, color: AppColors.textPrimary),
-              const SizedBox(width: 4),
-              CupertinoSwitch(
-                value: provider.isBurnMode,
-                onChanged: (value) {
-                  HapticFeedback.mediumImpact();
-                  provider.toggleBurnMode();
-                },
-                activeColor: AppColors.primary,
+        Row(
+          children: [
+            // Toggle suono
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(36, 36),
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                provider.toggleSound();
+              },
+              child: AppDecorations.glassContainer(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  provider.soundEnabled
+                      ? CupertinoIcons.speaker_2_fill
+                      : CupertinoIcons.speaker_slash_fill,
+                  size: 18,
+                  color: provider.soundEnabled
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary.withValues(alpha: 0.5),
+                ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            // Toggle flash mode
+            AppDecorations.glassContainer(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Row(
+                children: [
+                  Icon(
+                    AppIcons.burn,
+                    size: 16,
+                    color: isSessionActive
+                        ? AppColors.textSecondary.withValues(alpha: 0.4)
+                        : AppColors.textPrimary,
+                  ),
+                  const SizedBox(width: 4),
+                  CupertinoSwitch(
+                    value: provider.isBurnMode,
+                    // Disabilita lo switch durante la sessione attiva
+                    onChanged: isSessionActive
+                        ? null
+                        : (value) {
+                            HapticFeedback.mediumImpact();
+                            provider.toggleBurnMode();
+                          },
+                    activeTrackColor: AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -119,11 +256,11 @@ class TimerScreen extends StatelessWidget {
 
   Widget _buildSetupTimer(PomodoroProvider provider) {
     return AppDecorations.glassContainer(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      borderRadius: BorderRadius.circular(150),
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      borderRadius: BorderRadius.circular(155),
       child: SizedBox(
-        width: 280,
-        height: 280,
+        width: 290,
+        height: 290,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -139,7 +276,7 @@ class TimerScreen extends StatelessWidget {
             ),
             _buildTimerPoints(),
             _DraggableTimerIndicator(
-              radius: 130.0,
+              radius: 125.0,
               initialMinutes: provider.defaultWorkDuration ~/ 60,
               onMinutesChanged: (minutes) {
                 provider.setDefaultWorkDurationMinutes(minutes);
@@ -224,67 +361,79 @@ class TimerScreen extends StatelessWidget {
   Widget _buildActionButtons(BuildContext context, PomodoroProvider provider) {
     final session = provider.currentSession;
     final isRunning = provider.isRunning;
+    final isSoloMode = provider.selectedMode == StudyMode.solo;
 
-    return Row(
-      children: [
-        if (session != null)
-          Expanded(
-            child: CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                provider.stopTimer();
-              },
-              child: AppDecorations.glassContainer(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                child: const Center(
-                  child: Text('Cancel', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w800, fontSize: 17)),
+    // Se c'è una sessione attiva, mostra solo STOP (per studio singolo)
+    if (session != null && isRunning) {
+      // In modalità solo: mostra solo STOP
+      // In modalità gruppo: nessun controllo (gestito dall'host nella group_room_screen)
+      if (isSoloMode) {
+        return CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            provider.stopTimer();
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: Colors.red, width: 2),
+            ),
+            child: const Center(
+              child: Text(
+                'STOP',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  letterSpacing: 1.2,
                 ),
               ),
             ),
           ),
-        if (session != null) const SizedBox(width: 16),
-        Expanded(
-          child: CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              if (session == null) {
-                provider.startWorkSession();
-              } else if (isRunning) {
-                provider.pauseTimer();
-              } else {
-                provider.resumeTimer();
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                color: AppColors.cta, // Rosa per CTA come richiesto
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.cta.withValues(alpha: 0.4),
-                    blurRadius: 25,
-                    offset: const Offset(0, 10),
-                  )
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  session == null ? 'START STUDY' : (isRunning ? 'PAUSE' : 'RESUME'),
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
+        );
+      } else {
+        // In modalità gruppo, non mostrare controlli durante la sessione
+        return const SizedBox.shrink();
+      }
+    }
+
+    // Prima di iniziare: mostra START
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: () {
+        HapticFeedback.heavyImpact();
+        provider.startWorkSession();
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: AppColors.cta,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.cta.withValues(alpha: 0.4),
+              blurRadius: 25,
+              offset: const Offset(0, 10),
+            )
+          ],
+        ),
+        child: const Center(
+          child: Text(
+            'START STUDY',
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.w900,
+              fontSize: 18,
+              letterSpacing: 1.2,
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -438,28 +587,32 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
   int _angleToMinutes(double angle) {
     double normalizedAngle = angle + pi / 2;
     if (normalizedAngle < 0) normalizedAngle += 2 * pi;
-    int minutes = ((normalizedAngle / (2 * pi)) * 59).toInt() + 1;
+    int minutes = ((normalizedAngle / (2 * pi)) * 60).round();
+    if (minutes == 0) minutes = 60;
     return minutes.clamp(1, 60);
   }
 
   double _minutesToAngle(int minutes) {
     final clampedMinutes = minutes.clamp(1, 60);
-    final normalized = ((clampedMinutes - 1) / 59) * 2 * pi;
+    final effectiveMinutes = clampedMinutes == 60 ? 60 : clampedMinutes;
+    final normalized = (effectiveMinutes / 60) * 2 * pi;
     return normalized - pi / 2;
   }
 
   @override
   Widget build(BuildContext context) {
-    final center = Offset(widget.radius, widget.radius);
-    final buttonX = cos(_currentAngle) * (widget.radius - 10);
-    final buttonY = sin(_currentAngle) * (widget.radius - 10);
+    // Il centro è a metà del container (145, 145 per un container 290x290)
+    const double containerSize = 290;
+    final center = const Offset(containerSize / 2, containerSize / 2);
+    final buttonX = cos(_currentAngle) * (widget.radius - 15);
+    final buttonY = sin(_currentAngle) * (widget.radius - 15);
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onPanUpdate: (details) {
         final angle = _calculateAngle(center, details.localPosition);
         final minutes = _angleToMinutes(angle);
-        
+
         if (minutes != _lastMinute) {
           HapticFeedback.selectionClick();
           _lastMinute = minutes;
@@ -471,13 +624,13 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(width: widget.radius * 2 + 60, height: widget.radius * 2 + 60, color: Colors.transparent),
+          Container(width: containerSize, height: containerSize, color: Colors.transparent),
           Positioned(
-            left: buttonX + widget.radius - 20,
-            top: buttonY + widget.radius - 20,
+            left: buttonX + (containerSize / 2) - 18,
+            top: buttonY + (containerSize / 2) - 18,
             child: Container(
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 shape: BoxShape.circle,
@@ -489,7 +642,7 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
                   )
                 ],
               ),
-              child: const Icon(AppIcons.drag, size: 20, color: Colors.black),
+              child: const Icon(AppIcons.drag, size: 18, color: Colors.black),
             ),
           ),
         ],
