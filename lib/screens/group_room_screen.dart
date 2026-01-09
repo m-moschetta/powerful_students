@@ -18,7 +18,8 @@ class GroupRoomScreen extends StatefulWidget {
   State<GroupRoomScreen> createState() => _GroupRoomScreenState();
 }
 
-class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingObserver {
+class _GroupRoomScreenState extends State<GroupRoomScreen>
+    with WidgetsBindingObserver {
   bool _sessionFailed = false;
 
   @override
@@ -41,8 +42,11 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingOb
     final roomProvider = context.read<RoomProvider>();
 
     // Se l'app va in background con burn mode attivo e sessione in corso, la sessione fallisce per tutti
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      if (provider.isBurnMode && provider.isRunning && provider.currentSession != null) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      if (provider.isBurnMode &&
+          provider.isRunning &&
+          provider.currentSession != null) {
         provider.stopTimer();
         roomProvider.clearTimerState();
         setState(() {
@@ -90,7 +94,8 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingOb
   void _showShareMessage(String roomCode) {
     final pomodoroProvider = context.read<PomodoroProvider>();
     final durationMinutes = pomodoroProvider.defaultWorkDuration ~/ 60;
-    final message = 'Unisciti alla mia sessione di studio!\n'
+    final message =
+        'Unisciti alla mia sessione di studio!\n'
         'Codice: $roomCode\n'
         'Durata: $durationMinutes minuti';
 
@@ -113,7 +118,8 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingOb
   void _copyRoomCode(String roomCode) {
     final pomodoroProvider = context.read<PomodoroProvider>();
     final durationMinutes = pomodoroProvider.defaultWorkDuration ~/ 60;
-    final message = 'Unisciti alla mia sessione di studio!\n'
+    final message =
+        'Unisciti alla mia sessione di studio!\n'
         'Codice: $roomCode\n'
         'Durata: $durationMinutes minuti';
 
@@ -203,7 +209,13 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingOb
               child: Column(
                 children: [
                   const SizedBox(height: AppSpacing.sm),
-                  _buildHeader(context, roomProvider, pomodoroProvider, isOwner, session != null),
+                  _buildHeader(
+                    context,
+                    roomProvider,
+                    pomodoroProvider,
+                    isOwner,
+                    session != null,
+                  ),
                   const SizedBox(height: AppSpacing.lg),
                   if (!hasRoom)
                     _buildCreateJoinSection(roomProvider, pomodoroProvider)
@@ -214,7 +226,12 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingOb
                     const Spacer(),
                   ],
                   const Spacer(),
-                  _buildBottomActions(hasRoom, roomProvider, pomodoroProvider, isOwner),
+                  _buildBottomActions(
+                    hasRoom,
+                    roomProvider,
+                    pomodoroProvider,
+                    isOwner,
+                  ),
                   const SizedBox(height: AppSpacing.lg),
                 ],
               ),
@@ -247,9 +264,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingOb
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Qualcuno ha lasciato l\'app durante una sessione con modalità Flash attiva.',
-            style: AppTypography.body.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -284,7 +299,13 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingOb
     );
   }
 
-  Widget _buildHeader(BuildContext context, RoomProvider roomProvider, PomodoroProvider pomodoroProvider, bool isOwner, bool isSessionActive) {
+  Widget _buildHeader(
+    BuildContext context,
+    RoomProvider roomProvider,
+    PomodoroProvider pomodoroProvider,
+    bool isOwner,
+    bool isSessionActive,
+  ) {
     return Row(
       children: [
         CupertinoButton(
@@ -354,7 +375,10 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingOb
     );
   }
 
-  Widget _buildCreateJoinSection(RoomProvider provider, PomodoroProvider pomodoroProvider) {
+  Widget _buildCreateJoinSection(
+    RoomProvider provider,
+    PomodoroProvider pomodoroProvider,
+  ) {
     return Column(
       children: [
         const SizedBox(height: AppSpacing.md),
@@ -433,7 +457,11 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingOb
     );
   }
 
-  Widget _buildRoomInfo(RoomProvider provider, PomodoroProvider pomodoroProvider, bool isOwner) {
+  Widget _buildRoomInfo(
+    RoomProvider provider,
+    PomodoroProvider pomodoroProvider,
+    bool isOwner,
+  ) {
     final room = provider.room;
     final members = room?.memberIds ?? [];
     // Escludi l'owner dalla lista dei membri visualizzati (solo chi si è unito)
@@ -665,7 +693,12 @@ class _GroupRoomScreenState extends State<GroupRoomScreen> with WidgetsBindingOb
     );
   }
 
-  Widget _buildBottomActions(bool hasRoom, RoomProvider roomProvider, PomodoroProvider pomodoroProvider, bool isOwner) {
+  Widget _buildBottomActions(
+    bool hasRoom,
+    RoomProvider roomProvider,
+    PomodoroProvider pomodoroProvider,
+    bool isOwner,
+  ) {
     final session = pomodoroProvider.currentSession;
     final isRunning = pomodoroProvider.isRunning;
 
