@@ -33,7 +33,7 @@ class PomodoroNotificationService {
 
     try {
       const AndroidInitializationSettings androidSettings =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
+          AndroidInitializationSettings('@drawable/bricky_notification_icon');
 
       const DarwinInitializationSettings iosSettings =
           DarwinInitializationSettings(

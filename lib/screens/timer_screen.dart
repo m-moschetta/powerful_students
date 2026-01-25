@@ -317,8 +317,21 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Liquid Animation
-              _LiquidBackground(progress: session.progress),
+              // GIF animazione Bricky
+              Opacity(
+                opacity: 0.3,
+                child: Image.asset(
+                  AppAssets.brickyAnimation,
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              // Liquid Animation sovrapposta con opacity ridotta
+              Opacity(
+                opacity: 0.3,
+                child: _LiquidBackground(progress: session.progress),
+              ),
 
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,

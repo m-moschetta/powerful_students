@@ -661,7 +661,21 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              _LiquidBackground(progress: session.progress),
+              // GIF animazione Bricky al posto del liquid background
+              Opacity(
+                opacity: 0.3,
+                child: Image.asset(
+                  AppAssets.brickyAnimation,
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              // Mantieni anche il liquid background con opacity ridotta per effetto combinato
+              Opacity(
+                opacity: 0.3,
+                child: _LiquidBackground(progress: session.progress),
+              ),
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
