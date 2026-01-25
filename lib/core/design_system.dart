@@ -7,20 +7,20 @@ import 'package:flutter/material.dart';
 class AppColors {
   // Colori primari invertiti: Verde predominante, Rosa per CTA
   static const primary = Color(0xFFA9FFA6); // Verde (Branding principale)
-  static const cta = Color(0xFFF4C3F1);     // Rosa (Call to Action)
-  static const accent = Color(0xFFA9FFA6);  // Alias per il verde
-  
+  static const cta = Color(0xFFF4C3F1); // Rosa (Call to Action)
+  static const accent = Color(0xFFA9FFA6); // Alias per il verde
+
   // Backgrounds - Gradienti con più contrasto
   static const bgStart = Color(0xFFD1D1D1);
   static const bgEnd = Color(0xFFB0B0B0);
-  
+
   static const background = Color(0xFFF2F2F7);
   static const surface = Color(0xFFFFFFFF);
-  
+
   // Vetro (Glassmorphism) con più contrasto
   static Color glass(double opacity) => Colors.white.withValues(alpha: opacity);
   static const glassBorder = Color(0x66000000); // Più scuro per contrasto
-  
+
   // Testi con massimo contrasto
   static const textPrimary = Color(0xFF000000);
   static const textSecondary = Color(0xFF1C1C1E); // iOS Darker Secondary Label
@@ -127,7 +127,8 @@ class AppDecorations {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: opacity),
             borderRadius: borderRadius ?? BorderRadius.circular(AppRadius.lg),
-            border: border ?? Border.all(color: AppColors.glassBorder, width: 0.5),
+            border:
+                border ?? Border.all(color: AppColors.glassBorder, width: 0.5),
           ),
           child: child,
         ),
@@ -137,7 +138,9 @@ class AppDecorations {
 
   static BoxDecoration card({required bool isSelected, Color? selectedColor}) {
     return BoxDecoration(
-      color: isSelected ? (selectedColor ?? AppColors.primary) : AppColors.glass(0.4),
+      color: isSelected
+          ? (selectedColor ?? AppColors.primary)
+          : AppColors.glass(0.4),
       borderRadius: BorderRadius.circular(AppRadius.lg),
       border: Border.all(
         color: isSelected ? AppColors.textPrimary : AppColors.glassBorder,
@@ -157,4 +160,3 @@ class AppIcons {
   static const share = CupertinoIcons.share;
   static const drag = CupertinoIcons.slider_horizontal_3;
 }
-

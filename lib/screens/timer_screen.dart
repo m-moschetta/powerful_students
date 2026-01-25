@@ -40,8 +40,11 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
     final provider = context.read<PomodoroProvider>();
 
     // Se l'app va in background con burn mode attivo e sessione in corso, la sessione fallisce
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      if (provider.isBurnMode && provider.isRunning && provider.currentSession != null) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      if (provider.isBurnMode &&
+          provider.isRunning &&
+          provider.currentSession != null) {
         provider.stopTimer();
         setState(() {
           _sessionFailed = true;
@@ -106,9 +109,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Hai lasciato l\'app durante una sessione con modalità Flash attiva.',
-            style: AppTypography.body.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -157,7 +158,14 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           child: const Row(
             children: [
               Icon(AppIcons.back, color: AppColors.textPrimary, size: 28),
-              Text('Back', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
+              Text(
+                'Back',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),
@@ -244,7 +252,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
               ],
             ),
           ),
-          
+
           if (session == null)
             _buildSetupTimer(provider)
           else
@@ -307,7 +315,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
             children: [
               // Liquid Animation
               _LiquidBackground(progress: session.progress),
-              
+
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -327,7 +335,9 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
                   const SizedBox(height: 4),
                   Text(
                     '${(session.progress * 100).round()}%',
-                    style: AppTypography.caption.copyWith(fontWeight: FontWeight.w900),
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ],
               ),
@@ -349,7 +359,9 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
             width: isMajor ? 4 : 2,
             height: isMajor ? 4 : 2,
             decoration: BoxDecoration(
-              color: isMajor ? AppColors.textPrimary : AppColors.textPrimary.withValues(alpha: 0.3),
+              color: isMajor
+                  ? AppColors.textPrimary
+                  : AppColors.textPrimary.withValues(alpha: 0.3),
               shape: BoxShape.circle,
             ),
           ),
@@ -419,7 +431,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
               color: AppColors.cta.withValues(alpha: 0.4),
               blurRadius: 25,
               offset: const Offset(0, 10),
-            )
+            ),
           ],
         ),
         child: const Center(
@@ -480,7 +492,8 @@ class _LiquidBackground extends StatefulWidget {
   State<_LiquidBackground> createState() => _LiquidBackgroundState();
 }
 
-class _LiquidBackgroundState extends State<_LiquidBackground> with SingleTickerProviderStateMixin {
+class _LiquidBackgroundState extends State<_LiquidBackground>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -531,21 +544,24 @@ class _LiquidPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color;
     final path = Path();
-    
+
     final yOffset = size.height * (1 - progress);
     final waveHeight = 15.0;
-    
+
     path.moveTo(0, size.height);
     path.lineTo(0, yOffset);
-    
+
     for (double x = 0; x <= size.width; x++) {
-      final y = yOffset + sin((x / size.width * 2 * pi) + (animationValue * 2 * pi)) * waveHeight;
+      final y =
+          yOffset +
+          sin((x / size.width * 2 * pi) + (animationValue * 2 * pi)) *
+              waveHeight;
       path.lineTo(x, y);
     }
-    
+
     path.lineTo(size.width, size.height);
     path.close();
-    
+
     canvas.drawPath(path, paint);
   }
 
@@ -624,7 +640,11 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(width: containerSize, height: containerSize, color: Colors.transparent),
+          Container(
+            width: containerSize,
+            height: containerSize,
+            color: Colors.transparent,
+          ),
           Positioned(
             left: buttonX + (containerSize / 2) - 18,
             top: buttonY + (containerSize / 2) - 18,
@@ -639,7 +659,7 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
                   BoxShadow(
                     color: AppColors.primary.withValues(alpha: 0.5),
                     blurRadius: 15,
-                  )
+                  ),
                 ],
               ),
               child: const Icon(AppIcons.drag, size: 18, color: Colors.black),
@@ -650,4 +670,3 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
     );
   }
 }
-

@@ -42,7 +42,7 @@ class ModeSelectionScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppSpacing.xl),
-                      
+
                       AppDecorations.glassContainer(
                         padding: const EdgeInsets.all(AppSpacing.sm),
                         child: Column(
@@ -54,7 +54,10 @@ class ModeSelectionScreen extends StatelessWidget {
                               isSelected: selectedMode == StudyMode.solo,
                               onTap: () => pomodoro.selectMode(StudyMode.solo),
                             ),
-                            const Divider(height: 1, color: AppColors.glassBorder),
+                            const Divider(
+                              height: 1,
+                              color: AppColors.glassBorder,
+                            ),
                             ModeOptionCard(
                               title: 'Group',
                               subtitle: 'Studia in compagnia',
@@ -65,9 +68,9 @@ class ModeSelectionScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
+
                       const Spacer(),
-                      
+
                       Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                         child: CupertinoButton(
@@ -137,12 +140,16 @@ class ModeOptionCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primary : AppColors.glass(0.1),
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: isSelected ? Border.all(color: AppColors.textPrimary, width: 2) : null,
+                border: isSelected
+                    ? Border.all(color: AppColors.textPrimary, width: 2)
+                    : null,
               ),
               child: Icon(
                 icon,
                 size: 24,
-                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                color: isSelected
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
               ),
             ),
             const SizedBox(width: 16),
@@ -156,15 +163,10 @@ class ModeOptionCard extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              const Icon(
-                AppIcons.check,
-                color: AppColors.primary,
-                size: 24,
-              ),
+              const Icon(AppIcons.check, color: AppColors.primary, size: 24),
           ],
         ),
       ),
     );
   }
 }
-
