@@ -49,8 +49,8 @@ class ModeSelectionScreen extends StatelessWidget {
                           children: [
                             ModeOptionCard(
                               title: 'Solo',
-                              subtitle: 'Studia per conto tuo',
-                              icon: AppIcons.soloMode,
+                              subtitle: 'Costruisci individualmente',
+                              imageAsset: AppAssets.brickyLogo,
                               isSelected: selectedMode == StudyMode.solo,
                               onTap: () => pomodoro.selectMode(StudyMode.solo),
                             ),
@@ -60,8 +60,8 @@ class ModeSelectionScreen extends StatelessWidget {
                             ),
                             ModeOptionCard(
                               title: 'Group',
-                              subtitle: 'Studia in compagnia',
-                              icon: AppIcons.groupMode,
+                              subtitle: 'Costruisci in compagnia',
+                              imageAsset: AppAssets.brickyGroup,
                               isSelected: selectedMode == StudyMode.group,
                               onTap: () => pomodoro.selectMode(StudyMode.group),
                             ),
@@ -114,14 +114,14 @@ class ModeOptionCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.subtitle,
-    required this.icon,
+    required this.imageAsset,
     required this.isSelected,
     required this.onTap,
   });
 
   final String title;
   final String subtitle;
-  final IconData icon;
+  final String imageAsset;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -144,12 +144,12 @@ class ModeOptionCard extends StatelessWidget {
                     ? Border.all(color: AppColors.textPrimary, width: 2)
                     : null,
               ),
-              child: Icon(
-                icon,
-                size: 24,
-                color: isSelected
-                    ? AppColors.textPrimary
-                    : AppColors.textSecondary,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset(
+                  imageAsset,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
             const SizedBox(width: 16),

@@ -139,7 +139,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
         title: const Text(
-          'Entra in una stanza',
+          'Unisciti al mattoncino',
           style: TextStyle(fontSize: 18),
         ),
         content: Padding(
@@ -181,7 +181,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                 }
               }
             },
-            child: const Text('Entra'),
+            child: const Text('Unisciti'),
           ),
         ],
       ),
@@ -248,10 +248,11 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            CupertinoIcons.xmark_circle_fill,
-            size: 120,
-            color: Colors.red,
+          Image.asset(
+            AppAssets.brickyBroken,
+            width: 120,
+            height: 120,
+            fit: BoxFit.contain,
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
@@ -263,7 +264,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Qualcuno ha lasciato l\'app durante una sessione con modalità Flash attiva.',
+            'Qualcuno ha lasciato l\'app durante una sessione di Deep Building.',
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -338,12 +339,15 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
               children: [
-                Icon(
-                  AppIcons.burn,
-                  size: 16,
-                  color: isSessionActive
-                      ? AppColors.textSecondary.withValues(alpha: 0.4)
-                      : AppColors.textPrimary,
+                // Mattoncino Deep Focus - acceso/spento basato su isBurnMode
+                Opacity(
+                  opacity: pomodoroProvider.isBurnMode ? 1.0 : 0.4,
+                  child: Image.asset(
+                    AppAssets.brickyLogo,
+                    width: 16,
+                    height: 16,
+                    fit: BoxFit.contain,
+                  ),
                 ),
                 const SizedBox(width: 4),
                 CupertinoSwitch(
@@ -413,9 +417,20 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
           onPressed: provider.isJoiningRoom ? null : _showJoinRoomDialog,
           child: AppDecorations.glassContainer(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: const Text(
-              'Entra con codice',
-              style: TextStyle(color: AppColors.textPrimary),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  AppAssets.brickyLogo,
+                  width: 20,
+                  height: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Unisciti al mattoncino',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+              ],
             ),
           ),
         ),
@@ -466,7 +481,6 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
     final members = room?.memberIds ?? [];
     // Escludi l'owner dalla lista dei membri visualizzati (solo chi si è unito)
     final joinedMembers = members.where((id) => id != room?.ownerId).toList();
-    final durationMinutes = pomodoroProvider.defaultWorkDuration ~/ 60;
 
     return AppDecorations.glassContainer(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -479,8 +493,8 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
               Text(
                 provider.currentRoomCode ?? '',
                 style: AppTypography.title.copyWith(
-                  letterSpacing: 2, // Ridotto da 4 a 2
-                  fontSize: 20, // Ridotto da 24 a 20
+                  letterSpacing: 2,
+                  fontSize: 18,
                 ),
               ),
               const SizedBox(width: 12),
@@ -500,42 +514,51 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
               ],
             ],
           ),
-          const SizedBox(height: 8),
-          // Mostra durata sessione
-          Text(
-            'Sessione di $durationMinutes minuti',
-            style: AppTypography.caption,
-          ),
-          // Mostra avatar dei membri che si sono uniti (solo se ce ne sono)
+          // Mostra avatar dei membri sovrapposti (solo se ce ne sono)
           if (joinedMembers.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children: joinedMembers.map((memberId) {
-                // Genera iniziali dal memberId (prime 2 lettere)
-                final initials = memberId.substring(0, 2).toUpperCase();
-                return Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary, width: 2),
-                  ),
-                  child: Center(
-                    child: Text(
-                      initials,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+            SizedBox(
+              height: 36,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ...joinedMembers.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final memberId = entry.value;
+                    final initials = memberId.substring(0, 2).toUpperCase();
+                    // Calcola offset per sovrapposizione
+                    final totalWidth =
+                        joinedMembers.length * 24.0 + 12; // 24px overlap + 12 extra
+                    final startOffset = -totalWidth / 2;
+                    return Positioned(
+                      left: MediaQuery.of(context).size.width / 2 -
+                          AppSpacing.md -
+                          18 +
+                          startOffset +
+                          (index * 24.0),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.primary, width: 2),
+                        ),
+                        child: Center(
+                          child: Text(
+                            initials,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                );
-              }).toList(),
+                    );
+                  }),
+                ],
+              ),
             ),
           ],
         ],

@@ -93,10 +93,11 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            CupertinoIcons.xmark_circle_fill,
-            size: 120,
-            color: Colors.red,
+          Image.asset(
+            AppAssets.brickyBroken,
+            width: 120,
+            height: 120,
+            fit: BoxFit.contain,
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
@@ -108,7 +109,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Hai lasciato l\'app durante una sessione con modalità Flash attiva.',
+            'Hai lasciato l\'app durante una sessione di Deep Building.',
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -193,17 +194,20 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
               ),
             ),
             const SizedBox(width: 8),
-            // Toggle flash mode
+            // Toggle Deep Focus (mattoncino)
             AppDecorations.glassContainer(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: Row(
                 children: [
-                  Icon(
-                    AppIcons.burn,
-                    size: 16,
-                    color: isSessionActive
-                        ? AppColors.textSecondary.withValues(alpha: 0.4)
-                        : AppColors.textPrimary,
+                  // Mattoncino Deep Focus - acceso/spento basato su isBurnMode
+                  Opacity(
+                    opacity: provider.isBurnMode ? 1.0 : 0.4,
+                    child: Image.asset(
+                      AppAssets.brickyLogo,
+                      width: 16,
+                      height: 16,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   const SizedBox(width: 4),
                   CupertinoSwitch(
@@ -450,15 +454,21 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildPomodoroStats(PomodoroProvider provider) {
+    final count = provider.completedPomodoros;
     return AppDecorations.glassContainer(
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(AppIcons.fire, color: Colors.orange, size: 22),
+          Image.asset(
+            AppAssets.brickyCounter,
+            width: 22,
+            height: 22,
+            fit: BoxFit.contain,
+          ),
           const SizedBox(width: 10),
           Text(
-            '${provider.completedPomodoros} POMODORI',
+            '$count ${count == 1 ? 'MATTONCINO' : 'MATTONCINI'}',
             style: AppTypography.subtitle.copyWith(letterSpacing: 1),
           ),
         ],

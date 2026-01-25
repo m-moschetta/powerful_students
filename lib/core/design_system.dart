@@ -150,6 +150,17 @@ class AppDecorations {
   }
 }
 
+/// Asset paths for Bricky images
+class AppAssets {
+  static const brickyLogo = 'assets/images/Bricky App logo.png';
+  static const brickyLogoNotifications =
+      'assets/images/Bricky app logo - notifiche.png';
+  static const brickyGroup = 'assets/images/Bricky di gruppo.png';
+  static const brickyBroken = 'assets/images/Bricky rotto.png';
+  static const brickyCounter = 'assets/images/1 mattoncino_2 mattoncini.png';
+  static const brickyAnimation = 'assets/images/Mockup animazione.gif';
+}
+
 class AppIcons {
   static const soloMode = CupertinoIcons.person_fill;
   static const groupMode = CupertinoIcons.person_2_fill;
