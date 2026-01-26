@@ -322,10 +322,11 @@ class PomodoroProvider extends ChangeNotifier {
   // ===== SINCRONIZZAZIONE GRUPPO =====
 
   /// Associa il RoomProvider per la sincronizzazione
-  void setRoomProvider(RoomProvider? provider) {
+  void setRoomProvider(RoomProvider? provider, {VoidCallback? onSessionFailed}) {
     _syncService.configure(
       roomProvider: provider,
       onRemoteTimerState: _handleRemoteTimerState,
+      onRemoteSessionFailed: onSessionFailed,
     );
   }
 
@@ -341,6 +342,7 @@ class PomodoroProvider extends ChangeNotifier {
         remainingSeconds: _currentSession!.remainingTime,
         totalSeconds: _currentSession!.duration,
         sessionType: _currentSession!.type,
+        isBurnMode: _isBurnMode,
         startedAt: _currentSession!.startTime,
       );
     } else {
@@ -380,8 +382,13 @@ class PomodoroProvider extends ChangeNotifier {
           type: sessionType,
           duration: effectiveRemainingSeconds,
           startTime: DateTime.now(),
-          isBurnMode: _isBurnMode,
+          isBurnMode: timerState.isBurnMode,
         );
+      }
+
+      // Sincronizza anche il flag locale isBurnMode se diverso
+      if (_isBurnMode != timerState.isBurnMode) {
+        _isBurnMode = timerState.isBurnMode;
       }
 
       if (!_isRunning) {

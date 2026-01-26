@@ -21,12 +21,32 @@ class GroupRoomScreen extends StatefulWidget {
 class _GroupRoomScreenState extends State<GroupRoomScreen>
     with WidgetsBindingObserver {
   bool _sessionFailed = false;
+  bool _sessionCompleted = false;
+  int _lastCompletedCount = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WakelockPlus.enable();
+    
+    // Inizializza il conteggio per rilevare nuovi completamenti
+    final provider = context.read<PomodoroProvider>();
+    _lastCompletedCount = provider.completedPomodoros;
+
+    // Configura il callback per il fallimento remoto
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      provider.setRoomProvider(
+        context.read<RoomProvider>(),
+        onSessionFailed: () {
+          if (mounted) {
+            setState(() {
+              _sessionFailed = true;
+            });
+          }
+        },
+      );
+    });
   }
 
   @override
@@ -48,7 +68,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
           provider.isRunning &&
           provider.currentSession != null) {
         provider.stopTimer();
-        roomProvider.clearTimerState();
+        roomProvider.setFailedState();
         setState(() {
           _sessionFailed = true;
         });
@@ -195,9 +215,20 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
       body: SafeArea(
         child: Consumer2<RoomProvider, PomodoroProvider>(
           builder: (context, roomProvider, pomodoroProvider, _) {
+            // Rileva completamento sessione
+            if (pomodoroProvider.completedPomodoros > _lastCompletedCount) {
+              _lastCompletedCount = pomodoroProvider.completedPomodoros;
+              _sessionCompleted = true;
+            }
+
             // Mostra schermata di fallimento se la sessione è fallita
             if (_sessionFailed) {
               return _buildFailedScreen(context, roomProvider);
+            }
+
+            // Mostra schermata di successo se la sessione è conclusa
+            if (_sessionCompleted) {
+              return _buildCompletedScreen(context, roomProvider, pomodoroProvider);
             }
 
             final hasRoom = roomProvider.hasRoom;
@@ -300,6 +331,103 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
     );
   }
 
+  Widget _buildCompletedScreen(
+    BuildContext context,
+    RoomProvider roomProvider,
+    PomodoroProvider pomodoroProvider,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Column(
+        children: [
+          const SizedBox(height: AppSpacing.sm),
+          // Header semplificato senza toggle
+          Row(
+            children: [
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () async {
+                  await _leaveRoom(roomProvider);
+                  setState(() {
+                    _sessionCompleted = false;
+                  });
+                },
+                child: const Row(
+                  children: [
+                    Icon(AppIcons.back, color: AppColors.textPrimary, size: 28),
+                    Text(
+                      'Back',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          // Info stanza con avatar visibili
+          _buildRoomInfo(roomProvider, pomodoroProvider, roomProvider.isOwner),
+          const Spacer(),
+          // Immagine di successo
+          Image.asset(
+            AppAssets.brickyLogo,
+            width: 180,
+            height: 180,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'SESSIONE COMPLETATA!',
+            style: AppTypography.headline.copyWith(
+              color: AppColors.primary,
+              letterSpacing: 1,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            'Ottimo lavoro di squadra! Avete costruito un altro mattoncino.',
+            style: AppTypography.body,
+            textAlign: TextAlign.center,
+          ),
+          const Spacer(),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () async {
+              await _leaveRoom(roomProvider);
+              setState(() {
+                _sessionCompleted = false;
+              });
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              decoration: BoxDecoration(
+                color: AppColors.cta,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: const Center(
+                child: Text(
+                  'NUOVA SESSIONE',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeader(
     BuildContext context,
     RoomProvider roomProvider,
@@ -333,23 +461,24 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
           ),
         ),
         const Spacer(),
-        // Mostra flash mode toggle solo per l'host e solo quando non c'è sessione attiva
-        if (isOwner || !roomProvider.hasRoom)
-          AppDecorations.glassContainer(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Row(
-              children: [
-                // Mattoncino Deep Focus - acceso/spento basato su isBurnMode
-                Opacity(
-                  opacity: pomodoroProvider.isBurnMode ? 1.0 : 0.4,
-                  child: Image.asset(
-                    AppAssets.brickyLogo,
-                    width: 16,
-                    height: 16,
-                    fit: BoxFit.contain,
-                  ),
+        // Mostra stato Deep Focus per tutti
+        AppDecorations.glassContainer(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            children: [
+              // Mattoncino Deep Focus - acceso/spento basato su isBurnMode
+              Opacity(
+                opacity: pomodoroProvider.isBurnMode ? 1.0 : 0.4,
+                child: Image.asset(
+                  AppAssets.brickyBurnSmall,
+                  width: 16,
+                  height: 16,
+                  fit: BoxFit.contain,
                 ),
-                const SizedBox(width: 4),
+              ),
+              const SizedBox(width: 4),
+              // Solo l'owner o chi non è in una stanza può cambiare il burn mode
+              if (isOwner || !roomProvider.hasRoom)
                 CupertinoSwitch(
                   value: pomodoroProvider.isBurnMode,
                   onChanged: isSessionActive
@@ -359,22 +488,21 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                           pomodoroProvider.toggleBurnMode();
                         },
                   activeTrackColor: AppColors.primary,
+                )
+              else
+                // Badge per i guest che indica lo stato
+                Text(
+                  pomodoroProvider.isBurnMode ? 'ON' : 'OFF',
+                  style: AppTypography.label.copyWith(
+                    fontSize: 10,
+                    color: pomodoroProvider.isBurnMode
+                        ? AppColors.primary
+                        : AppColors.textSecondary.withValues(alpha: 0.5),
+                  ),
                 ),
-              ],
-            ),
-          )
-        else
-          // Per chi non è owner, mostra solo badge Group
-          AppDecorations.glassContainer(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Row(
-              children: [
-                Icon(AppIcons.groupMode, size: 16, color: AppColors.primary),
-                const SizedBox(width: 8),
-                const Text('Group', style: AppTypography.label),
-              ],
-            ),
+            ],
           ),
+        ),
       ],
     );
   }
@@ -421,7 +549,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Image.asset(
-                  AppAssets.brickyLogo,
+                  AppAssets.brickyGroup,
                   width: 20,
                   height: 20,
                 ),
@@ -597,7 +725,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
             // Per chi non è owner, mostra solo il timer con la durata impostata dall'host
             _buildWaitingTimer(provider, isOwner)
           else
-            _buildActiveTimer(session),
+            _buildActiveTimer(session, provider.isBurnMode),
         ],
       ),
     );
@@ -612,27 +740,45 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
         child: SizedBox(
           width: 290,
           height: 290,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              Text(
-                _formatDuration(provider.defaultWorkDuration),
-                style: AppTypography.timerLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'IN ATTESA',
-                style: AppTypography.label.copyWith(
-                  color: AppColors.textSecondary,
+              // Immagine centrale Bricky in attesa
+              Opacity(
+                opacity: 0.5,
+                child: Image.asset(
+                  AppAssets.brickyLogo,
+                  width: 140,
+                  height: 140,
+                  fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                "L'host avvierà la sessione",
-                style: AppTypography.caption.copyWith(
-                  fontSize: 12,
-                  color: AppColors.textSecondary.withValues(alpha: 0.7),
-                ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Spacer(flex: 3),
+                  Text(
+                    _formatDuration(provider.defaultWorkDuration),
+                    style: AppTypography.timerLarge.copyWith(fontSize: 48),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'IN ATTESA',
+                    style: AppTypography.label.copyWith(
+                      color: AppColors.textSecondary,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "L'host avvierà la sessione",
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 12,
+                      color: AppColors.textSecondary.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const Spacer(flex: 1),
+                ],
               ),
             ],
           ),
@@ -644,7 +790,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
     return _buildSetupTimer(provider);
   }
 
-  Widget _buildActiveTimer(StudySession session) {
+  Widget _buildActiveTimer(StudySession session, bool isBurnMode) {
     return CircularPercentIndicator(
       radius: 150.0,
       lineWidth: 12.0,
@@ -654,55 +800,62 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
       backgroundColor: AppColors.textPrimary.withValues(alpha: 0.05),
       progressColor: AppColors.primary,
       circularStrokeCap: CircularStrokeCap.round,
-      center: ClipOval(
-        child: SizedBox(
-          width: 280,
-          height: 280,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // GIF animazione Bricky al posto del liquid background
-              Opacity(
-                opacity: 0.3,
-                child: Image.asset(
-                  AppAssets.brickyAnimation,
-                  width: 200,
-                  height: 200,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              // Mantieni anche il liquid background con opacity ridotta per effetto combinato
-              Opacity(
-                opacity: 0.3,
+      center: SizedBox(
+        width: 280,
+        height: 280,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Liquid Animation in background (molto leggera)
+            Positioned.fill(
+              child: ClipOval(
                 child: _LiquidBackground(progress: session.progress),
               ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _getSessionText(session.type),
-                    style: AppTypography.label.copyWith(
-                      letterSpacing: 3,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
+            ),
+
+            // Layout principale: Mattoncino grande + Timer piccolo sotto
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // MATTONCINO PROTAGONISTA - grande e sempre visibile
+                _AnimatedBrickyBuilder(
+                  progress: session.progress,
+                  isBurnMode: isBurnMode,
+                ),
+                const SizedBox(height: 20),
+
+                // Timer piccolo sotto
+                Column(
+                  children: [
+                    Text(
+                      _getSessionText(session.type),
+                      style: AppTypography.label.copyWith(
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    session.formattedRemainingTime,
-                    style: AppTypography.timerLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${(session.progress * 100).round()}%',
-                    style: AppTypography.caption.copyWith(
-                      fontWeight: FontWeight.w900,
+                    const SizedBox(height: 2),
+                    Text(
+                      session.formattedRemainingTime,
+                      style: AppTypography.timerLarge.copyWith(
+                        fontSize: 42,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${(session.progress * 100).round()}%',
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -1067,6 +1220,43 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Animated Bricky widget that progressively reveals as session progresses
+/// Il mattoncino è il PROTAGONISTA: grande e sempre visibile, mai coperto
+class _AnimatedBrickyBuilder extends StatelessWidget {
+  final double progress;
+  final bool isBurnMode;
+
+  const _AnimatedBrickyBuilder({
+    required this.progress,
+    required this.isBurnMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Calculate reveal factor: fully visible at 97% progress (29/30 minutes)
+    // progress ranges from 0.0 (start) to 1.0 (complete)
+    final revealFactor = (progress / 0.97).clamp(0.0, 1.0);
+
+    // Scegli l'immagine in base al burn mode
+    final assetPath = isBurnMode
+        ? AppAssets.brickyBurn  // Image 4 - con fuoco (burn mode attivo)
+        : AppAssets.brickyLogo; // Image 3 - normale (burn mode spento)
+
+    return ClipRect(
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        heightFactor: revealFactor,
+        child: Image.asset(
+          assetPath,
+          width: 170,
+          height: 170,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

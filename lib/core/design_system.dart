@@ -152,13 +152,23 @@ class AppDecorations {
 
 /// Asset paths for Bricky images
 class AppAssets {
-  static const brickyLogo = 'assets/images/Bricky App logo.png';
-  static const brickyLogoNotifications =
-      'assets/images/Bricky app logo - notifiche.png';
+  // Logo principale (mattoncino singolo normale grande)
+  static const brickyLogo = 'assets/images/bricky_logo.png';
+
+  // Mattoncino con fuoco (burn mode icon piccolo)
+  static const brickyBurn = 'assets/images/bricky_burn.png';
+
+  // Mattoncino con fuoco più piccolo (alternativa burn mode)
+  static const brickyBurnSmall = 'assets/images/bricky_burn_small.png';
+
+  // Gruppo di mattoncini (modalità gruppo)
   static const brickyGroup = 'assets/images/Bricky di gruppo.png';
+
+  // Mattoncino rotto con lacrima (sessione fallita)
   static const brickyBroken = 'assets/images/Bricky rotto.png';
+
+  // Mattoncino con libro (contatore pomodori)
   static const brickyCounter = 'assets/images/1 mattoncino_2 mattoncini.png';
-  static const brickyAnimation = 'assets/images/Mockup animazione.gif';
 }
 
 class AppIcons {

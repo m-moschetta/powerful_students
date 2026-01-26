@@ -10,6 +10,7 @@ class PomodoroSyncService {
 
   RoomProvider? _roomProvider;
   RemoteTimerCallback? _onRemoteTimerState;
+  VoidCallback? _onRemoteSessionFailed;
   bool _isProcessingRemoteUpdate = false;
 
   bool get isProcessingRemoteUpdate => _isProcessingRemoteUpdate;
@@ -17,10 +18,12 @@ class PomodoroSyncService {
   void configure({
     required RoomProvider? roomProvider,
     required RemoteTimerCallback? onRemoteTimerState,
+    VoidCallback? onRemoteSessionFailed,
   }) {
     _roomProvider?.removeListener(_handleRoomChange);
     _roomProvider = roomProvider;
     _onRemoteTimerState = onRemoteTimerState;
+    _onRemoteSessionFailed = onRemoteSessionFailed;
     _roomProvider?.addListener(_handleRoomChange);
 
     // Emmetti subito lo stato corrente per mantenere il timer allineato
@@ -35,6 +38,8 @@ class PomodoroSyncService {
     required int remainingSeconds,
     required int totalSeconds,
     required SessionType sessionType,
+    bool isBurnMode = false,
+    bool isFailed = false,
     DateTime? startedAt,
     DateTime? pausedAt,
   }) async {
@@ -47,6 +52,8 @@ class PomodoroSyncService {
         remainingSeconds: remainingSeconds,
         totalSeconds: totalSeconds,
         sessionType: _sessionTypeToString(sessionType),
+        isBurnMode: isBurnMode,
+        isFailed: isFailed,
         startedAt: startedAt,
         pausedAt: pausedAt,
       );
@@ -81,7 +88,11 @@ class PomodoroSyncService {
     _isProcessingRemoteUpdate = true;
     try {
       final timerState = _roomProvider?.room?.timerState;
-      _onRemoteTimerState?.call(timerState);
+      if (timerState?.isFailed == true) {
+        _onRemoteSessionFailed?.call();
+      } else {
+        _onRemoteTimerState?.call(timerState);
+      }
     } finally {
       _isProcessingRemoteUpdate = false;
     }

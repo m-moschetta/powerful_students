@@ -31,14 +31,29 @@ class ModeSelectionScreen extends StatelessWidget {
                     children: [
                       const SizedBox(height: AppSpacing.xl),
                       const Text(
-                        'Powerful Students',
+                        'Powerful Buddy',
                         style: AppTypography.headline,
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: AppSpacing.xs),
+                      const SizedBox(height: AppSpacing.md),
                       const Text(
-                        'Scegli modalità',
-                        style: AppTypography.caption,
+                        'Tutto si costruisce\nun mattoncino alla volta.',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                          height: 1.3,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      const Text(
+                        'Come vuoi costruire oggi?',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppSpacing.xl),
@@ -87,7 +102,7 @@ class ModeSelectionScreen extends StatelessWidget {
                           color: AppColors.cta, // Rosa per CTA come richiesto
                           borderRadius: BorderRadius.circular(AppRadius.lg),
                           child: const Text(
-                            'INIZIA ORA',
+                            'INIZIA A COSTRUIRE',
                             style: TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.w900,
@@ -135,8 +150,8 @@ class ModeOptionCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 50,
-              height: 50,
+              width: 70,
+              height: 70,
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primary : AppColors.glass(0.1),
                 borderRadius: BorderRadius.circular(AppRadius.md),
@@ -145,7 +160,7 @@ class ModeOptionCard extends StatelessWidget {
                     : null,
               ),
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(6.0),
                 child: Image.asset(
                   imageAsset,
                   fit: BoxFit.contain,

@@ -303,6 +303,8 @@ class RoomProvider extends ChangeNotifier {
     required int remainingSeconds,
     required int totalSeconds,
     required String sessionType,
+    bool isBurnMode = false,
+    bool isFailed = false,
     DateTime? startedAt,
     DateTime? pausedAt,
   }) async {
@@ -316,6 +318,8 @@ class RoomProvider extends ChangeNotifier {
         remainingSeconds: remainingSeconds,
         totalSeconds: totalSeconds,
         sessionType: sessionType,
+        isBurnMode: isBurnMode,
+        isFailed: isFailed,
         startedAt: startedAt,
         pausedAt: pausedAt,
       );
@@ -326,6 +330,32 @@ class RoomProvider extends ChangeNotifier {
       });
     } catch (e, stackTrace) {
       debugPrint('updateTimerState error: $e\n$stackTrace');
+    }
+  }
+
+  Future<void> setFailedState() async {
+    final code = currentRoomCode;
+    if (code == null || _room?.timerState == null) return;
+
+    try {
+      final currentState = _room!.timerState!;
+      final failedState = TimerState(
+        isRunning: false,
+        isPaused: false,
+        remainingSeconds: currentState.remainingSeconds,
+        totalSeconds: currentState.totalSeconds,
+        sessionType: currentState.sessionType,
+        isBurnMode: currentState.isBurnMode,
+        isFailed: true,
+        startedAt: currentState.startedAt,
+      );
+
+      await _roomsRef.doc(code).update({
+        'timerState': failedState.toMap(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e, stackTrace) {
+      debugPrint('setFailedState error: $e\n$stackTrace');
     }
   }
 

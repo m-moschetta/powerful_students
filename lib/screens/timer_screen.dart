@@ -203,7 +203,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
                   Opacity(
                     opacity: provider.isBurnMode ? 1.0 : 0.4,
                     child: Image.asset(
-                      AppAssets.brickyLogo,
+                      AppAssets.brickyBurnSmall,
                       width: 16,
                       height: 16,
                       fit: BoxFit.contain,
@@ -260,7 +260,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           if (session == null)
             _buildSetupTimer(provider)
           else
-            _buildActiveTimer(session),
+            _buildActiveTimer(session, provider.isBurnMode),
         ],
       ),
     );
@@ -300,7 +300,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildActiveTimer(StudySession session) {
+  Widget _buildActiveTimer(StudySession session, bool isBurnMode) {
     return CircularPercentIndicator(
       radius: 150.0,
       lineWidth: 12.0,
@@ -310,56 +310,62 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
       backgroundColor: AppColors.textPrimary.withValues(alpha: 0.05),
       progressColor: AppColors.primary,
       circularStrokeCap: CircularStrokeCap.round,
-      center: ClipOval(
-        child: SizedBox(
-          width: 280,
-          height: 280,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // GIF animazione Bricky
-              Opacity(
-                opacity: 0.3,
-                child: Image.asset(
-                  AppAssets.brickyAnimation,
-                  width: 200,
-                  height: 200,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              // Liquid Animation sovrapposta con opacity ridotta
-              Opacity(
-                opacity: 0.3,
+      center: SizedBox(
+        width: 280,
+        height: 280,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Liquid Animation in background (molto leggera)
+            Positioned.fill(
+              child: ClipOval(
                 child: _LiquidBackground(progress: session.progress),
               ),
+            ),
 
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _getSessionText(session.type),
-                    style: AppTypography.label.copyWith(
-                      letterSpacing: 3,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
+            // Layout principale: Mattoncino grande + Timer piccolo sotto
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // MATTONCINO PROTAGONISTA - grande e sempre visibile
+                _AnimatedBrickyBuilder(
+                  progress: session.progress,
+                  isBurnMode: isBurnMode,
+                ),
+                const SizedBox(height: 20),
+
+                // Timer piccolo sotto
+                Column(
+                  children: [
+                    Text(
+                      _getSessionText(session.type),
+                      style: AppTypography.label.copyWith(
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    session.formattedRemainingTime,
-                    style: AppTypography.timerLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${(session.progress * 100).round()}%',
-                    style: AppTypography.caption.copyWith(
-                      fontWeight: FontWeight.w900,
+                    const SizedBox(height: 2),
+                    Text(
+                      session.formattedRemainingTime,
+                      style: AppTypography.timerLarge.copyWith(
+                        fontSize: 42,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${(session.progress * 100).round()}%',
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -689,6 +695,43 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Animated Bricky widget that progressively reveals as session progresses
+/// Il mattoncino è il PROTAGONISTA: grande e sempre visibile, mai coperto
+class _AnimatedBrickyBuilder extends StatelessWidget {
+  final double progress;
+  final bool isBurnMode;
+
+  const _AnimatedBrickyBuilder({
+    required this.progress,
+    required this.isBurnMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Calculate reveal factor: fully visible at 97% progress (29/30 minutes)
+    // progress ranges from 0.0 (start) to 1.0 (complete)
+    final revealFactor = (progress / 0.97).clamp(0.0, 1.0);
+
+    // Scegli l'immagine in base al burn mode
+    final assetPath = isBurnMode
+        ? AppAssets.brickyBurn  // Image 4 - con fuoco (burn mode attivo)
+        : AppAssets.brickyLogo; // Image 3 - normale (burn mode spento)
+
+    return ClipRect(
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        heightFactor: revealFactor,
+        child: Image.asset(
+          assetPath,
+          width: 170,
+          height: 170,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

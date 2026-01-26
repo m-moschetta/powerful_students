@@ -1,25 +1,30 @@
 # Repository Guidelines
 
-Follow this guide before shipping any update so the Pomodoro experience remains consistent across platforms.
+Use this guide to keep the Powerful Students Flutter app consistent across platforms.
 
 ## Project Structure & Module Organization
-- `lib/main.dart` initializes dependency injection and global providers.
-- Feature flows sit under `lib/screens/` (e.g., `timer_screen.dart`), reusable UI lives in `lib/widgets/`, shared state in `lib/providers/`, and domain models in `lib/models/`.
-- Audio and imagery assets belong in `assets/sounds/` and `assets/images/`; list new files in `pubspec.yaml`.
-- Tests mirror the source layout in `test/`, keeping widget, provider, and model coverage close to their implementations.
+- `lib/main.dart` wires the app bootstrap and providers; shared utilities live in `lib/core/`.
+- Feature UI is in `lib/screens/`, reusable UI in `lib/widgets/`, state in `lib/providers/`, models in `lib/models/`, and integrations in `lib/services/`.
+- Firebase configuration is generated in `lib/firebase_options.dart`; regenerate it with FlutterFire when project ids change.
+- Assets live in `assets/images/` and `assets/sounds/`; register new files in `pubspec.yaml`.
+- Tests live under `test/` (for example `test/services/` and `test/widget_test.dart`); mirror the production module names where possible.
 
 ## Build, Test, and Development Commands
-- `flutter pub get` refreshes dependencies after editing `pubspec.yaml`.
-- `flutter run -d chrome` spins up the web target; swap the device flag for `ios` or `android` as needed.
-- `flutter analyze` surfaces lint, null-safety, and type issues enforced by `analysis_options.yaml`.
-- `flutter test --coverage` runs unit and widget suites while updating coverage locally.
-- `dart format lib test` applies the expected code style before committing.
+- `flutter pub get` refreshes dependencies after `pubspec.yaml` changes.
+- `flutter run -d chrome` runs the web target locally; swap `chrome` for `ios` or `android`.
+- `flutter analyze` enforces the `analysis_options.yaml` lint set.
+- `flutter test` runs unit and widget tests; use `flutter test --coverage` when you need a coverage report.
+- `dart format lib test` applies the expected Dart formatting.
+- `flutterfire configure` regenerates Firebase options after switching Firebase projects.
 
 ## Coding Style & Naming Conventions
-Adhere to the Flutter lints baseline: two-space indentation, trailing commas for multi-line widget trees, `UpperCamelCase` classes, `lowerCamelCase` members, and `snake_case` file names. Keep provider mutations inside methods to simplify mocking and maintain declarative widget hierarchies.
+Follow `package:flutter_lints`: two-space indentation, trailing commas in multi-line widget trees, `UpperCamelCase` types, `lowerCamelCase` members, and `snake_case` file names. Prefer small widgets and keep provider mutations inside provider methods to maintain testability.
 
 ## Testing Guidelines
-Create a matching `*_test.dart` for every new screen, widget, or provider. Use `pumpWidget` with the minimal provider setup, stub timers and audio callbacks, and assert break/focus transitions plus notification cues. Document intentional gaps in the test description and link to follow-up tasks when necessary.
+Add `*_test.dart` files alongside new services, providers, and widgets. Use minimal `pumpWidget` setups, stub timers/audio, and cover focus/break transitions. There is no explicit coverage gate, but new behavior should include tests or a brief justification in the PR.
 
 ## Commit & Pull Request Guidelines
-Write commit subjects in the imperative mood (≤50 characters) with optional bodies for context. Each PR should include a concise summary, linked issue or story, reproduction steps for new behavior, screenshots for UI changes, and confirmation that `flutter analyze`, `dart format`, and `flutter test` completed successfully. Tag reviewers familiar with the affected module to speed feedback.
+Recent history uses Conventional Commits (e.g., `feat:`, `fix:`, `docs:`). Keep subjects imperative and concise. PRs should include a short summary, linked issue (if any), QA steps, and screenshots for UI changes, plus confirmation that `flutter analyze`, `dart format`, and `flutter test` pass.
+
+## Configuration & Security Notes
+Firestore is required for group rooms. Follow the Firebase setup in `README.md`, and keep rules scoped to the minimum needed for development.

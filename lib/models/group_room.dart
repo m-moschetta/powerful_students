@@ -55,6 +55,8 @@ class TimerState {
     required this.remainingSeconds,
     required this.totalSeconds,
     required this.sessionType,
+    this.isBurnMode = false,
+    this.isFailed = false,
     this.startedAt,
     this.pausedAt,
   });
@@ -64,6 +66,8 @@ class TimerState {
   final int remainingSeconds;
   final int totalSeconds;
   final String sessionType; // 'work', 'shortBreak', 'longBreak'
+  final bool isBurnMode;
+  final bool isFailed;
   final DateTime? startedAt;
   final DateTime? pausedAt;
 
@@ -74,6 +78,8 @@ class TimerState {
       remainingSeconds: map['remainingSeconds'] as int? ?? 0,
       totalSeconds: map['totalSeconds'] as int? ?? 0,
       sessionType: map['sessionType'] as String? ?? 'work',
+      isBurnMode: map['isBurnMode'] as bool? ?? false,
+      isFailed: map['isFailed'] as bool? ?? false,
       startedAt: (map['startedAt'] as Timestamp?)?.toDate(),
       pausedAt: (map['pausedAt'] as Timestamp?)?.toDate(),
     );
@@ -86,6 +92,8 @@ class TimerState {
       'remainingSeconds': remainingSeconds,
       'totalSeconds': totalSeconds,
       'sessionType': sessionType,
+      'isBurnMode': isBurnMode,
+      'isFailed': isFailed,
       'startedAt': startedAt != null ? Timestamp.fromDate(startedAt!) : null,
       'pausedAt': pausedAt != null ? Timestamp.fromDate(pausedAt!) : null,
     };
