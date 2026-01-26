@@ -150,8 +150,8 @@ class ModeOptionCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 70,
-              height: 70,
+              width: 85,
+              height: 85,
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primary : AppColors.glass(0.1),
                 borderRadius: BorderRadius.circular(AppRadius.md),
@@ -160,7 +160,7 @@ class ModeOptionCard extends StatelessWidget {
                     : null,
               ),
               child: Padding(
-                padding: const EdgeInsets.all(6.0),
+                padding: const EdgeInsets.all(4.0),
                 child: Image.asset(
                   imageAsset,
                   fit: BoxFit.contain,

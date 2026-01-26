@@ -698,34 +698,46 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
     final session = provider.currentSession;
 
     return Center(
-      child: Stack(
-        alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Ring esterno
-          Container(
-            width: 310,
-            height: 310,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.textPrimary.withValues(alpha: 0.15),
-                width: 15,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 30,
-                  spreadRadius: 2,
+          // Timer circolare con mattoncino al centro
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Ring esterno
+              Container(
+                width: 310,
+                height: 310,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.textPrimary.withValues(alpha: 0.15),
+                    width: 15,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 30,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+
+              if (session == null)
+                // Per chi non è owner, mostra solo il timer con la durata impostata dall'host
+                _buildWaitingTimer(provider, isOwner)
+              else
+                _buildActiveTimerCircle(session, provider.isBurnMode),
+            ],
           ),
 
-          if (session == null)
-            // Per chi non è owner, mostra solo il timer con la durata impostata dall'host
-            _buildWaitingTimer(provider, isOwner)
-          else
-            _buildActiveTimer(session, provider.isBurnMode),
+          // Timer info SOTTO il cerchio
+          if (session != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            _buildTimerInfo(session),
+          ],
         ],
       ),
     );
@@ -790,7 +802,8 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
     return _buildSetupTimer(provider);
   }
 
-  Widget _buildActiveTimer(StudySession session, bool isBurnMode) {
+  // Cerchio del timer con solo il mattoncino al centro
+  Widget _buildActiveTimerCircle(StudySession session, bool isBurnMode) {
     return CircularPercentIndicator(
       radius: 150.0,
       lineWidth: 12.0,
@@ -800,64 +813,57 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
       backgroundColor: AppColors.textPrimary.withValues(alpha: 0.05),
       progressColor: AppColors.primary,
       circularStrokeCap: CircularStrokeCap.round,
-      center: SizedBox(
-        width: 280,
-        height: 280,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Liquid Animation in background (molto leggera)
-            Positioned.fill(
-              child: ClipOval(
-                child: _LiquidBackground(progress: session.progress),
+      center: ClipOval(
+        child: SizedBox(
+          width: 280,
+          height: 280,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Liquid Animation in background
+              _LiquidBackground(progress: session.progress),
+
+              // MATTONCINO AL CENTRO - fisso e protagonista
+              _AnimatedBrickyBuilder(
+                progress: session.progress,
+                isBurnMode: isBurnMode,
               ),
-            ),
-
-            // Layout principale: Mattoncino grande + Timer piccolo sotto
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // MATTONCINO PROTAGONISTA - grande e sempre visibile
-                _AnimatedBrickyBuilder(
-                  progress: session.progress,
-                  isBurnMode: isBurnMode,
-                ),
-                const SizedBox(height: 20),
-
-                // Timer piccolo sotto
-                Column(
-                  children: [
-                    Text(
-                      _getSessionText(session.type),
-                      style: AppTypography.label.copyWith(
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      session.formattedRemainingTime,
-                      style: AppTypography.timerLarge.copyWith(
-                        fontSize: 42,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${(session.progress * 100).round()}%',
-                      style: AppTypography.caption.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  // Timer info SOTTO il cerchio
+  Widget _buildTimerInfo(StudySession session) {
+    return Column(
+      children: [
+        Text(
+          _getSessionText(session.type),
+          style: AppTypography.label.copyWith(
+            letterSpacing: 3,
+            fontWeight: FontWeight.w900,
+            fontSize: 12,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          session.formattedRemainingTime,
+          style: AppTypography.timerLarge.copyWith(
+            fontSize: 52,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${(session.progress * 100).round()}%',
+          style: AppTypography.caption.copyWith(
+            fontWeight: FontWeight.w800,
+            fontSize: 14,
+          ),
+        ),
+      ],
     );
   }
 
@@ -1226,8 +1232,8 @@ class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
 }
 
 /// Animated Bricky widget that progressively reveals as session progresses
-/// Il mattoncino è il PROTAGONISTA: grande e sempre visibile, mai coperto
-class _AnimatedBrickyBuilder extends StatelessWidget {
+/// Il mattoncino è il PROTAGONISTA: fisso al centro, appare gradualmente
+class _AnimatedBrickyBuilder extends StatefulWidget {
   final double progress;
   final bool isBurnMode;
 
@@ -1237,27 +1243,61 @@ class _AnimatedBrickyBuilder extends StatelessWidget {
   });
 
   @override
+  State<_AnimatedBrickyBuilder> createState() => _AnimatedBrickyBuilderState();
+}
+
+class _AnimatedBrickyBuilderState extends State<_AnimatedBrickyBuilder>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _floatController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Animazione leggera di floating
+    _floatController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _floatController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Calculate reveal factor: fully visible at 97% progress (29/30 minutes)
-    // progress ranges from 0.0 (start) to 1.0 (complete)
-    final revealFactor = (progress / 0.97).clamp(0.0, 1.0);
+    final revealFactor = (widget.progress / 0.97).clamp(0.0, 1.0);
 
     // Scegli l'immagine in base al burn mode
-    final assetPath = isBurnMode
-        ? AppAssets.brickyBurn  // Image 4 - con fuoco (burn mode attivo)
-        : AppAssets.brickyLogo; // Image 3 - normale (burn mode spento)
+    final assetPath = widget.isBurnMode
+        ? AppAssets.brickyBurn  // con fuoco (burn mode attivo)
+        : AppAssets.brickyLogo; // normale (burn mode spento)
 
-    return ClipRect(
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        heightFactor: revealFactor,
-        child: Image.asset(
-          assetPath,
-          width: 170,
-          height: 170,
-          fit: BoxFit.contain,
-        ),
-      ),
+    return AnimatedBuilder(
+      animation: _floatController,
+      builder: (context, child) {
+        // Leggero movimento su e giù (max 8 pixel)
+        final floatOffset = _floatController.value * 8.0;
+
+        return Transform.translate(
+          offset: Offset(0, -floatOffset),
+          child: Opacity(
+            opacity: revealFactor,
+            child: Transform.scale(
+              scale: 0.8 + (revealFactor * 0.2), // Da 80% a 100% di dimensione
+              child: Image.asset(
+                assetPath,
+                width: 170,
+                height: 170,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
