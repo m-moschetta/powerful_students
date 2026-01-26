@@ -162,13 +162,16 @@ class AppAssets {
   static const brickyBurnSmall = 'assets/images/bricky_burn_small.png';
 
   // Gruppo di mattoncini (modalità gruppo)
-  static const brickyGroup = 'assets/images/Bricky di gruppo.png';
+  static const brickyGroup = 'assets/images/bricky_group.png';
 
   // Mattoncino rotto con lacrima (sessione fallita)
   static const brickyBroken = 'assets/images/Bricky rotto.png';
 
   // Mattoncino con libro (contatore pomodori)
   static const brickyCounter = 'assets/images/1 mattoncino_2 mattoncini.png';
+
+  // Mattoncino felice animato (celebrazione successo)
+  static const brickyCelebration = 'assets/images/bricky_celebration.gif';
 }
 
 class AppIcons {

@@ -18,6 +18,8 @@ class TimerScreen extends StatefulWidget {
 
 class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
   bool _sessionFailed = false;
+  bool _sessionCompleted = false;
+  int _lastCompletedCount = 0;
 
   @override
   void initState() {
@@ -25,6 +27,10 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // Attiva wakelock per mantenere lo schermo acceso
     WakelockPlus.enable();
+
+    // Inizializza il conteggio per rilevare nuovi completamenti
+    final provider = context.read<PomodoroProvider>();
+    _lastCompletedCount = provider.completedPomodoros;
   }
 
   @override
@@ -60,9 +66,20 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
       body: SafeArea(
         child: Consumer<PomodoroProvider>(
           builder: (context, provider, child) {
+            // Rileva completamento sessione
+            if (provider.completedPomodoros > _lastCompletedCount) {
+              _lastCompletedCount = provider.completedPomodoros;
+              _sessionCompleted = true;
+            }
+
             // Mostra schermata di fallimento se la sessione è fallita
             if (_sessionFailed) {
               return _buildFailedScreen(context);
+            }
+
+            // Mostra schermata di successo se la sessione è completata
+            if (_sessionCompleted) {
+              return _buildSuccessScreen(context, provider);
             }
 
             return Padding(
@@ -137,6 +154,122 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccessScreen(BuildContext context, PomodoroProvider provider) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(),
+          // Titolo
+          Text(
+            'Complimenti!',
+            style: AppTypography.headline.copyWith(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          // Sottotitolo
+          Text(
+            'Hai costruito un nuovo mattoncino',
+            style: AppTypography.body.copyWith(
+              fontSize: 16,
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          // GIF animata con cerchio dietro
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Cerchio grigio chiaro di sfondo
+              Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.textSecondary.withValues(alpha: 0.08),
+                ),
+              ),
+              // GIF animata del mattoncino felice
+              Image.asset(
+                AppAssets.brickyCelebration,
+                width: 180,
+                height: 180,
+                fit: BoxFit.contain,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+          // Testo motivazionale
+          Text(
+            'Ricorda: ogni esame si prepara\nun mattoncino alla volta.',
+            style: AppTypography.body.copyWith(
+              fontSize: 15,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Contatore mattoncini
+          Text(
+            '${provider.completedPomodoros} ${provider.completedPomodoros == 1 ? 'mattoncino costruito' : 'mattoncini costruiti'}',
+            style: AppTypography.subtitle.copyWith(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const Spacer(),
+
+          // Bottone CTA
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              setState(() {
+                _sessionCompleted = false;
+              });
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              decoration: BoxDecoration(
+                color: AppColors.cta,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.cta.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Text(
+                  'Continua a costruire',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
         ],
       ),
     );
