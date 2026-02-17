@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:powerful_students/core/design_system.dart';
 import 'package:powerful_students/screens/chat_screen.dart';
+import 'package:powerful_students/screens/dev_settings_screen.dart';
 import 'package:powerful_students/screens/mode_selection_screen.dart';
+import 'package:powerful_students/screens/stats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,11 +18,48 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  int _devTapCount = 0;
+  DateTime? _lastDevTap;
 
   final _pages = const [
     ModeSelectionScreen(),
     ChatScreen(),
+    StatsScreen(),
   ];
+
+  void _handleDevTap() {
+    final now = DateTime.now();
+    // Reset counter if more than 2 seconds between taps
+    if (_lastDevTap != null &&
+        now.difference(_lastDevTap!).inMilliseconds > 2000) {
+      _devTapCount = 0;
+    }
+    _lastDevTap = now;
+    _devTapCount++;
+
+    if (_devTapCount >= 5) {
+      _devTapCount = 0;
+      HapticFeedback.heavyImpact();
+      Navigator.of(context).push(
+        CupertinoPageRoute(
+          builder: (context) => Stack(
+            children: [
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.bgStart, AppColors.bgEnd],
+                  ),
+                ),
+              ),
+              const DevSettingsScreen(),
+            ],
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
+                horizontal: AppSpacing.sm,
                 vertical: 8,
               ),
               child: Row(
@@ -59,12 +98,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'Studio',
                     isSelected: _selectedIndex == 0,
                     onTap: () => _onTabTapped(0),
+                    onLongPress: _handleDevTap,
                   ),
                   _TabBarItem(
                     icon: CupertinoIcons.chat_bubble_2_fill,
                     label: 'Buddy',
                     isSelected: _selectedIndex == 1,
                     onTap: () => _onTabTapped(1),
+                  ),
+                  _TabBarItem(
+                    icon: CupertinoIcons.chart_bar_fill,
+                    label: 'Stats',
+                    isSelected: _selectedIndex == 2,
+                    onTap: () => _onTabTapped(2),
                   ),
                 ],
               ),
@@ -88,22 +134,25 @@ class _TabBarItem extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.onLongPress,
   });
 
   final IconData icon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.25)

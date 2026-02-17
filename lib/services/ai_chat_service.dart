@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -7,9 +6,25 @@ import 'package:http/http.dart' as http;
 
 class AiChatService {
   static const _baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
-  static const _model = 'openrouter/auto';
 
-  static const _systemPrompt = '''
+  // Overridable settings (set from SettingsProvider via ChatProvider)
+  String? apiKeyOverride;
+  String? modelOverride;
+  String? systemPromptOverride;
+
+  String get _apiKey =>
+      (apiKeyOverride != null && apiKeyOverride!.isNotEmpty)
+          ? apiKeyOverride!
+          : (dotenv.env['OPENROUTER_API_KEY'] ?? '');
+
+  String get _model => modelOverride ?? 'openrouter/auto';
+
+  String get _systemPrompt =>
+      (systemPromptOverride != null && systemPromptOverride!.isNotEmpty)
+          ? systemPromptOverride!
+          : _defaultSystemPrompt;
+
+  static const _defaultSystemPrompt = '''
 Sei **Powerful Buddy**, un assistente AI dedicato allo studio e all'apprendimento.
 
 Il tuo ruolo:
@@ -28,20 +43,13 @@ Regole:
 - Usa emoji con moderazione per rendere le risposte più vivaci
 ''';
 
-  String get _apiKey => dotenv.env['OPENROUTER_API_KEY'] ?? '';
-
   /// Sends a chat completion request and streams the response token by token.
-  ///
-  /// [messages] is the conversation history as a list of
-  /// `{'role': 'user'|'assistant', 'content': '...'}` maps.
-  ///
-  /// Returns a [Stream<String>] of incremental content deltas.
   Stream<String> streamChatCompletion(
     List<Map<String, dynamic>> messages,
   ) async* {
     final apiKey = _apiKey;
     if (apiKey.isEmpty) {
-      yield 'Errore: API key non configurata. Aggiungi OPENROUTER_API_KEY al file .env';
+      yield 'Errore: API key non configurata. Apri le impostazioni sviluppatore (tieni premuto il titolo 5 volte nella tab Studio) e inserisci la tua OpenRouter API key.';
       return;
     }
 
@@ -99,45 +107,6 @@ Regole:
     } catch (e) {
       debugPrint('AiChatService error: $e');
       yield 'Errore di connessione. Controlla la tua rete e riprova.';
-    }
-  }
-
-  /// Non-streaming completion for simpler use cases.
-  Future<String> sendMessage(List<Map<String, dynamic>> messages) async {
-    final apiKey = _apiKey;
-    if (apiKey.isEmpty) {
-      return 'Errore: API key non configurata. Aggiungi OPENROUTER_API_KEY al file .env';
-    }
-
-    try {
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://powerful-students.app',
-          'X-Title': 'Powerful Students',
-        },
-        body: jsonEncode({
-          'model': _model,
-          'messages': [
-            {'role': 'system', 'content': _systemPrompt},
-            ...messages,
-          ],
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final choices = json['choices'] as List;
-        return choices[0]['message']['content'] as String;
-      } else {
-        debugPrint('OpenRouter error: ${response.body}');
-        return 'Errore nella risposta del server. Riprova tra poco.';
-      }
-    } catch (e) {
-      debugPrint('AiChatService error: $e');
-      return 'Errore di connessione. Controlla la tua rete e riprova.';
     }
   }
 }

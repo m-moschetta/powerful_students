@@ -2,10 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:powerful_students/models/chat_message.dart';
+import 'package:powerful_students/providers/settings_provider.dart';
 import 'package:powerful_students/services/ai_chat_service.dart';
 
 class ChatProvider extends ChangeNotifier {
   final AiChatService _chatService = AiChatService();
+
+  /// Syncs chat service settings from the SettingsProvider.
+  void updateSettings(SettingsProvider settings) {
+    _chatService.apiKeyOverride = settings.apiKey;
+    _chatService.modelOverride = settings.model;
+    _chatService.systemPromptOverride = settings.effectiveSystemPrompt;
+  }
 
   final List<ChatMessage> _messages = [];
   List<ChatMessage> get messages => List.unmodifiable(_messages);

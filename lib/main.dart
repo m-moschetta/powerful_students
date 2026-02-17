@@ -13,6 +13,8 @@ import 'package:powerful_students/core/design_system.dart';
 import 'package:powerful_students/providers/chat_provider.dart';
 import 'package:powerful_students/providers/pomodoro_provider.dart';
 import 'package:powerful_students/providers/room_provider.dart';
+import 'package:powerful_students/providers/settings_provider.dart';
+import 'package:powerful_students/providers/stats_provider.dart';
 import 'package:powerful_students/screens/group_room_screen.dart';
 import 'package:powerful_students/screens/home_screen.dart';
 import 'package:powerful_students/screens/timer_screen.dart';
@@ -46,22 +48,41 @@ void main() {
       // Load environment variables for OpenRouter API key
       await dotenv.load(fileName: '.env');
 
+      // Initialize persistent providers
+      final settingsProvider = SettingsProvider();
+      await settingsProvider.initialize();
+
+      final statsProvider = StatsProvider();
+      await statsProvider.initialize();
+
       runApp(
         MultiProvider(
           providers: [
             ChangeNotifierProvider<RoomProvider>(
               create: (_) => RoomProvider(),
             ),
+            ChangeNotifierProvider<SettingsProvider>.value(
+              value: settingsProvider,
+            ),
+            ChangeNotifierProvider<StatsProvider>.value(
+              value: statsProvider,
+            ),
             ChangeNotifierProxyProvider<RoomProvider, PomodoroProvider>(
               create: (_) => PomodoroProvider(),
               update: (_, roomProvider, pomodoroProvider) {
                 final notifier = pomodoroProvider ?? PomodoroProvider();
                 notifier.setRoomProvider(roomProvider);
+                notifier.setStatsProvider(statsProvider);
                 return notifier;
               },
             ),
-            ChangeNotifierProvider<ChatProvider>(
+            ChangeNotifierProxyProvider<SettingsProvider, ChatProvider>(
               create: (_) => ChatProvider(),
+              update: (_, settings, chatProvider) {
+                final provider = chatProvider ?? ChatProvider();
+                provider.updateSettings(settings);
+                return provider;
+              },
             ),
           ],
           child: const MyApp(),

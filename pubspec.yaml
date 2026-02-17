@@ -73,6 +73,9 @@ dependencies:
   flutter_markdown: ^0.7.6
   flutter_dotenv: ^5.2.1
 
+  # Persistent storage for settings and stats
+  shared_preferences: ^2.3.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
