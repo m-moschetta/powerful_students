@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 class AiChatService {
   static const _baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
+  static const _timeout = Duration(seconds: 30);
 
   // Overridable settings (set from SettingsProvider via ChatProvider)
   String? apiKeyOverride;
@@ -19,44 +20,24 @@ class AiChatService {
 
   String get _model => modelOverride ?? 'openrouter/auto';
 
-  String get _systemPrompt =>
-      (systemPromptOverride != null && systemPromptOverride!.isNotEmpty)
-          ? systemPromptOverride!
-          : _defaultSystemPrompt;
-
-  static const _defaultSystemPrompt = '''
-Sei **Powerful Buddy**, un assistente AI dedicato allo studio e all'apprendimento.
-
-Il tuo ruolo:
-- Dai consigli pratici e motivazionali per migliorare le sessioni di studio
-- Suggerisci tecniche di studio evidence-based (Pomodoro, active recall, spaced repetition, ecc.)
-- Aiuti a pianificare le sessioni di studio e a gestire il tempo
-- Rispondi a domande su qualsiasi materia scolastica o universitaria
-- Motivi lo studente quando è stanco o scoraggiato
-- Suggerisci strategie per affrontare esami e verifiche
-
-Regole:
-- Rispondi sempre in italiano, a meno che lo studente non chieda diversamente
-- Usa il markdown per formattare le risposte in modo chiaro (titoli, elenchi, grassetto, code blocks)
-- Sii conciso ma completo
-- Mantieni un tono amichevole e incoraggiante, come un compagno di studio esperto
-- Usa emoji con moderazione per rendere le risposte più vivaci
-''';
-
   /// Sends a chat completion request and streams the response token by token.
   Stream<String> streamChatCompletion(
     List<Map<String, dynamic>> messages,
   ) async* {
     final apiKey = _apiKey;
     if (apiKey.isEmpty) {
-      yield 'Errore: API key non configurata. Apri le impostazioni sviluppatore (tieni premuto il titolo 5 volte nella tab Studio) e inserisci la tua OpenRouter API key.';
+      yield 'Errore: API key non configurata. Vai nelle impostazioni sviluppatore (tocca 5 volte la tab Studio) e inserisci la tua OpenRouter API key.';
       return;
     }
+
+    // System prompt is injected via systemPromptOverride from SettingsProvider
+    final systemPrompt = systemPromptOverride ?? '';
 
     final body = jsonEncode({
       'model': _model,
       'messages': [
-        {'role': 'system', 'content': _systemPrompt},
+        if (systemPrompt.isNotEmpty)
+          {'role': 'system', 'content': systemPrompt},
         ...messages,
       ],
       'stream': true,
@@ -71,8 +52,9 @@ Regole:
       })
       ..body = body;
 
+    final client = http.Client();
     try {
-      final response = await http.Client().send(request);
+      final response = await client.send(request).timeout(_timeout);
 
       if (response.statusCode != 200) {
         final errorBody = await response.stream.bytesToString();
@@ -107,6 +89,8 @@ Regole:
     } catch (e) {
       debugPrint('AiChatService error: $e');
       yield 'Errore di connessione. Controlla la tua rete e riprova.';
+    } finally {
+      client.close();
     }
   }
 }

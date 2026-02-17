@@ -7,7 +7,6 @@ class StatsProvider extends ChangeNotifier {
   static const _keyDailyBricks = 'daily_bricks';
   static const _keyTotalBricks = 'total_bricks';
   static const _keyTotalMinutes = 'total_minutes';
-  static const _keyTotalSessions = 'total_sessions';
   static const _keyBestStreak = 'best_streak';
 
   SharedPreferences? _prefs;
@@ -16,12 +15,10 @@ class StatsProvider extends ChangeNotifier {
   Map<String, int> _dailyBricks = {};
   int _totalBricks = 0;
   int _totalMinutes = 0;
-  int _totalSessions = 0;
   int _bestStreak = 0;
 
   int get totalBricks => _totalBricks;
   int get totalMinutes => _totalMinutes;
-  int get totalSessions => _totalSessions;
   int get bestStreak => _bestStreak;
 
   /// Current consecutive days streak (including today if bricks were built).
@@ -86,7 +83,6 @@ class StatsProvider extends ChangeNotifier {
     _prefs = await SharedPreferences.getInstance();
     _totalBricks = _prefs?.getInt(_keyTotalBricks) ?? 0;
     _totalMinutes = _prefs?.getInt(_keyTotalMinutes) ?? 0;
-    _totalSessions = _prefs?.getInt(_keyTotalSessions) ?? 0;
     _bestStreak = _prefs?.getInt(_keyBestStreak) ?? 0;
 
     final dailyJson = _prefs?.getString(_keyDailyBricks);
@@ -102,7 +98,6 @@ class StatsProvider extends ChangeNotifier {
   Future<void> recordBrick({int durationMinutes = 25}) async {
     _totalBricks++;
     _totalMinutes += durationMinutes;
-    _totalSessions++;
 
     final key = _dateKey(DateTime.now());
     _dailyBricks[key] = (_dailyBricks[key] ?? 0) + 1;
@@ -120,7 +115,6 @@ class StatsProvider extends ChangeNotifier {
   Future<void> _save() async {
     await _prefs?.setInt(_keyTotalBricks, _totalBricks);
     await _prefs?.setInt(_keyTotalMinutes, _totalMinutes);
-    await _prefs?.setInt(_keyTotalSessions, _totalSessions);
     await _prefs?.setInt(_keyBestStreak, _bestStreak);
     await _prefs?.setString(_keyDailyBricks, jsonEncode(_dailyBricks));
   }
@@ -129,7 +123,6 @@ class StatsProvider extends ChangeNotifier {
   Future<void> resetStats() async {
     _totalBricks = 0;
     _totalMinutes = 0;
-    _totalSessions = 0;
     _bestStreak = 0;
     _dailyBricks.clear();
     await _save();

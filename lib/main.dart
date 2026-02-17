@@ -46,7 +46,11 @@ void main() {
       await _configureTimezone();
 
       // Load environment variables for OpenRouter API key
-      await dotenv.load(fileName: '.env');
+      try {
+        await dotenv.load(fileName: '.env');
+      } catch (e) {
+        debugPrint('Could not load .env file: $e');
+      }
 
       // Initialize persistent providers
       final settingsProvider = SettingsProvider();

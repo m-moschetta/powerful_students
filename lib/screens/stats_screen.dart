@@ -14,6 +14,7 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
+  static const _dailyBrickGoal = 8;
   bool _isEnglish = false;
 
   // Localization helpers
@@ -30,22 +31,24 @@ class _StatsScreenState extends State<StatsScreen> {
               children: [
                 _buildHeader(),
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                    ),
-                    children: [
-                      const SizedBox(height: AppSpacing.sm),
-                      _buildStreakCard(stats),
-                      const SizedBox(height: AppSpacing.sm),
-                      _buildTotalStatsCard(stats),
-                      const SizedBox(height: AppSpacing.sm),
-                      _buildWeeklyChart(stats),
-                      const SizedBox(height: AppSpacing.sm),
-                      _buildDailyHistory(stats),
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
-                  ),
+                  child: stats.totalBricks == 0
+                      ? _buildEmptyState()
+                      : ListView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                          ),
+                          children: [
+                            const SizedBox(height: AppSpacing.sm),
+                            _buildStreakCard(stats),
+                            const SizedBox(height: AppSpacing.sm),
+                            _buildTotalStatsCard(stats),
+                            const SizedBox(height: AppSpacing.sm),
+                            _buildWeeklyChart(stats),
+                            const SizedBox(height: AppSpacing.sm),
+                            _buildDailyHistory(stats),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+                        ),
                 ),
               ],
             );
@@ -103,6 +106,39 @@ class _StatsScreenState extends State<StatsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              CupertinoIcons.chart_bar,
+              size: 64,
+              color: AppColors.textSecondary.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              _t('Nessuna statistica ancora', 'No statistics yet'),
+              style: AppTypography.title,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              _t(
+                'Completa la tua prima sessione Pomodoro per iniziare a tracciare i tuoi progressi!',
+                'Complete your first Pomodoro session to start tracking your progress!',
+              ),
+              style: AppTypography.caption.copyWith(height: 1.4),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -364,7 +400,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
                         value: day.bricks > 0
-                            ? (day.bricks / 8).clamp(0.0, 1.0)
+                            ? (day.bricks / _dailyBrickGoal).clamp(0.0, 1.0)
                             : 0.0,
                         minHeight: 8,
                         backgroundColor: Colors.white.withValues(alpha: 0.1),

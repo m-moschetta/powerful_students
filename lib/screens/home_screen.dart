@@ -29,9 +29,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handleDevTap() {
     final now = DateTime.now();
-    // Reset counter if more than 2 seconds between taps
+    // Reset counter if more than 3 seconds between taps
     if (_lastDevTap != null &&
-        now.difference(_lastDevTap!).inMilliseconds > 2000) {
+        now.difference(_lastDevTap!).inMilliseconds > 3000) {
       _devTapCount = 0;
     }
     _lastDevTap = now;
@@ -98,7 +98,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'Studio',
                     isSelected: _selectedIndex == 0,
                     onTap: () => _onTabTapped(0),
-                    onLongPress: _handleDevTap,
                   ),
                   _TabBarItem(
                     icon: CupertinoIcons.chat_bubble_2_fill,
@@ -122,7 +121,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onTabTapped(int index) {
-    if (index == _selectedIndex) return;
+    if (index == _selectedIndex) {
+      // Tapping the already-selected Studio tab counts toward dev access
+      if (index == 0) _handleDevTap();
+      return;
+    }
+    _devTapCount = 0;
     HapticFeedback.selectionClick();
     setState(() => _selectedIndex = index);
   }
@@ -134,53 +138,55 @@ class _TabBarItem extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
-    this.onLongPress,
   });
 
   final IconData icon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
-  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.25)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 24,
-              color: isSelected
-                  ? AppColors.textPrimary
-                  : AppColors.textSecondary.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+    return Semantics(
+      label: label,
+      selected: isSelected,
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.25)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 24,
                 color: isSelected
                     ? AppColors.textPrimary
                     : AppColors.textSecondary.withValues(alpha: 0.5),
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

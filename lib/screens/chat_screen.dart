@@ -21,6 +21,19 @@ class _ChatScreenState extends State<ChatScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
+  bool _hasText = false;
+  int _lastMessageCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController.addListener(() {
+      final hasText = _textController.text.trim().isNotEmpty;
+      if (hasText != _hasText) {
+        setState(() => _hasText = hasText);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -65,13 +78,18 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Consumer<ChatProvider>(
                 builder: (context, provider, _) {
                   if (provider.messages.isEmpty) {
+                    _lastMessageCount = 0;
                     return _buildEmptyState();
                   }
 
-                  // Auto-scroll when new messages arrive
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                  // Auto-scroll only when message count changes or streaming
+                  final messageCount = provider.messages.length;
+                  final isStreaming = provider.messages.isNotEmpty &&
+                      provider.messages.last.isStreaming;
+                  if (messageCount != _lastMessageCount || isStreaming) {
+                    _lastMessageCount = messageCount;
                     _scrollToBottom();
-                  });
+                  }
 
                   return ListView.builder(
                     controller: _scrollController,
@@ -370,22 +388,26 @@ class _ChatScreenState extends State<ChatScreen> {
                           )
                         : CupertinoButton(
                             padding: const EdgeInsets.all(8),
-                            onPressed: _sendMessage,
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: AppColors.cta,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: AppColors.textPrimary,
-                                  width: 1.5,
+                            onPressed: _hasText ? _sendMessage : null,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 200),
+                              opacity: _hasText ? 1.0 : 0.4,
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: AppColors.cta,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: AppColors.textPrimary,
+                                    width: 1.5,
+                                  ),
                                 ),
-                              ),
-                              child: const Icon(
-                                CupertinoIcons.arrow_up,
-                                color: AppColors.textPrimary,
-                                size: 20,
+                                child: const Icon(
+                                  CupertinoIcons.arrow_up,
+                                  color: AppColors.textPrimary,
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ),
