@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:powerful_students/models/study_session.dart';
 import 'package:powerful_students/models/group_room.dart';
 import 'package:powerful_students/providers/room_provider.dart';
+import 'package:powerful_students/providers/stats_provider.dart';
 import 'package:powerful_students/services/pomodoro_notification_service.dart';
 import 'package:powerful_students/services/pomodoro_sync_service.dart';
 import 'package:powerful_students/services/pomodoro_timer_service.dart';
@@ -27,6 +28,12 @@ class PomodoroProvider extends ChangeNotifier {
   final PomodoroNotificationService _notificationService;
   final PomodoroSyncService _syncService;
   final PomodoroTimerService _timerService;
+  StatsProvider? _statsProvider;
+
+  /// Sets the StatsProvider for recording completed bricks.
+  void setStatsProvider(StatsProvider statsProvider) {
+    _statsProvider = statsProvider;
+  }
 
   // Getters
   StudySession? get currentSession => _currentSession;
@@ -195,9 +202,11 @@ class PomodoroProvider extends ChangeNotifier {
       final sessionType = _currentSession?.type ?? SessionType.work;
       _notificationService.handleSessionCompletionFeedback(sessionType);
 
-      // Incrementa il contatore pomodori completati
+      // Incrementa il contatore pomodori completati e registra il mattoncino
       if (_currentSession?.type == SessionType.work) {
         _completedPomodoros++;
+        final durationMin = (_currentSession!.duration / 60).round();
+        _statsProvider?.recordBrick(durationMinutes: durationMin);
       }
 
       // Non auto-transire alla prossima sessione

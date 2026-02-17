@@ -4,15 +4,19 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:provider/provider.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:powerful_students/core/design_system.dart';
+import 'package:powerful_students/providers/chat_provider.dart';
 import 'package:powerful_students/providers/pomodoro_provider.dart';
 import 'package:powerful_students/providers/room_provider.dart';
+import 'package:powerful_students/providers/settings_provider.dart';
+import 'package:powerful_students/providers/stats_provider.dart';
 import 'package:powerful_students/screens/group_room_screen.dart';
-import 'package:powerful_students/screens/mode_selection_screen.dart';
+import 'package:powerful_students/screens/home_screen.dart';
 import 'package:powerful_students/screens/timer_screen.dart';
 import 'firebase_options.dart';
 
@@ -41,18 +45,47 @@ void main() {
 
       await _configureTimezone();
 
+      // Load environment variables for OpenRouter API key
+      try {
+        await dotenv.load(fileName: '.env');
+      } catch (e) {
+        debugPrint('Could not load .env file: $e');
+      }
+
+      // Initialize persistent providers
+      final settingsProvider = SettingsProvider();
+      await settingsProvider.initialize();
+
+      final statsProvider = StatsProvider();
+      await statsProvider.initialize();
+
       runApp(
         MultiProvider(
           providers: [
             ChangeNotifierProvider<RoomProvider>(
               create: (_) => RoomProvider(),
             ),
+            ChangeNotifierProvider<SettingsProvider>.value(
+              value: settingsProvider,
+            ),
+            ChangeNotifierProvider<StatsProvider>.value(
+              value: statsProvider,
+            ),
             ChangeNotifierProxyProvider<RoomProvider, PomodoroProvider>(
               create: (_) => PomodoroProvider(),
               update: (_, roomProvider, pomodoroProvider) {
                 final notifier = pomodoroProvider ?? PomodoroProvider();
                 notifier.setRoomProvider(roomProvider);
+                notifier.setStatsProvider(statsProvider);
                 return notifier;
+              },
+            ),
+            ChangeNotifierProxyProvider<SettingsProvider, ChatProvider>(
+              create: (_) => ChatProvider(),
+              update: (_, settings, chatProvider) {
+                final provider = chatProvider ?? ChatProvider();
+                provider.updateSettings(settings);
+                return provider;
               },
             ),
           ],
@@ -131,7 +164,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         Widget page;
         switch (settings.name) {
           case '/':
-            page = const ModeSelectionScreen();
+            page = const HomeScreen();
             break;
           case '/timer':
             page = const TimerScreen();
@@ -140,7 +173,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             page = const GroupRoomScreen();
             break;
           default:
-            page = const ModeSelectionScreen();
+            page = const HomeScreen();
         }
         
         // Usiamo CupertinoPageRoute per transizioni native iOS
