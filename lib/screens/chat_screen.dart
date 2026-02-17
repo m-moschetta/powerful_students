@@ -23,6 +23,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final _focusNode = FocusNode();
   bool _hasText = false;
   int _lastMessageCount = 0;
+  DateTime _lastScrollTime = DateTime(0);
 
   @override
   void initState() {
@@ -82,13 +83,21 @@ class _ChatScreenState extends State<ChatScreen> {
                     return _buildEmptyState();
                   }
 
-                  // Auto-scroll only when message count changes or streaming
+                  // Auto-scroll on new messages; throttle during streaming
                   final messageCount = provider.messages.length;
-                  final isStreaming = provider.messages.isNotEmpty &&
-                      provider.messages.last.isStreaming;
-                  if (messageCount != _lastMessageCount || isStreaming) {
+                  final isStreaming = provider.messages.last.isStreaming;
+                  final now = DateTime.now();
+
+                  if (messageCount != _lastMessageCount) {
+                    // New message added - always scroll
                     _lastMessageCount = messageCount;
                     _scrollToBottom();
+                    _lastScrollTime = now;
+                  } else if (isStreaming &&
+                      now.difference(_lastScrollTime).inMilliseconds > 300) {
+                    // During streaming, scroll at most every 300ms
+                    _scrollToBottom();
+                    _lastScrollTime = now;
                   }
 
                   return ListView.builder(

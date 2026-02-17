@@ -63,8 +63,9 @@ class AiChatService {
         return;
       }
 
-      // Parse SSE stream
+      // Parse SSE stream (with timeout to detect stalled connections)
       await for (final chunk in response.stream
+          .timeout(_timeout)
           .transform(utf8.decoder)
           .transform(const LineSplitter())) {
         if (chunk.startsWith('data: ')) {

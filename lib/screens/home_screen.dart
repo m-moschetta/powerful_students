@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_devTapCount >= 5) {
       _devTapCount = 0;
+      _lastDevTap = null;
       HapticFeedback.heavyImpact();
       Navigator.of(context).push(
         CupertinoPageRoute(

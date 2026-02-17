@@ -137,7 +137,7 @@ Regole:
         headers: {
           if (_apiKey.isNotEmpty) 'Authorization': 'Bearer $_apiKey',
         },
-      );
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
