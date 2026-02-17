@@ -68,6 +68,11 @@ dependencies:
   # Keep screen awake during study sessions
   wakelock_plus: ^1.2.8
 
+  # AI Chat (OpenRouter)
+  http: ^1.2.1
+  flutter_markdown: ^0.7.6
+  flutter_dotenv: ^5.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -95,6 +100,7 @@ flutter:
   assets:
     - assets/sounds/
     - assets/images/
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
