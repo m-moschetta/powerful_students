@@ -10,6 +10,7 @@ import 'package:powerful_students/models/study_session.dart';
 import 'package:powerful_students/providers/room_provider.dart';
 import 'package:powerful_students/providers/pomodoro_provider.dart';
 import 'package:powerful_students/core/design_system.dart';
+import 'package:powerful_students/l10n/app_localizations.dart';
 
 class GroupRoomScreen extends StatefulWidget {
   const GroupRoomScreen({super.key});
@@ -88,9 +89,10 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
   }
 
   void _handleRoomError(Object error) {
+    final l10n = AppLocalizations.of(context)!;
     final message = error is RoomException
         ? error.message
-        : 'Si è verificato un errore. Riprova.';
+        : l10n.genericError;
     _showSnack(message);
   }
 
@@ -112,12 +114,10 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
   }
 
   void _showShareMessage(String roomCode) {
+    final l10n = AppLocalizations.of(context)!;
     final pomodoroProvider = context.read<PomodoroProvider>();
     final durationMinutes = pomodoroProvider.defaultWorkDuration ~/ 60;
-    final message =
-        'Unisciti alla mia sessione di studio!\n'
-        'Codice: $roomCode\n'
-        'Durata: $durationMinutes minuti';
+    final message = l10n.shareRoomMessage(roomCode, durationMinutes);
 
     try {
       final box = context.findRenderObject() as RenderBox?;
@@ -127,46 +127,45 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
 
       Share.share(
         message,
-        subject: 'Codice Stanza Powerful Students',
+        subject: l10n.shareRoomSubject,
         sharePositionOrigin: shareOrigin,
       );
     } catch (e) {
-      _showSnack('Errore nella condivisione');
+      _showSnack(l10n.shareError);
     }
   }
 
   void _copyRoomCode(String roomCode) {
+    final l10n = AppLocalizations.of(context)!;
     final pomodoroProvider = context.read<PomodoroProvider>();
     final durationMinutes = pomodoroProvider.defaultWorkDuration ~/ 60;
-    final message =
-        'Unisciti alla mia sessione di studio!\n'
-        'Codice: $roomCode\n'
-        'Durata: $durationMinutes minuti';
+    final message = l10n.shareRoomMessage(roomCode, durationMinutes);
 
     try {
       Clipboard.setData(ClipboardData(text: message));
-      _showSnack('Messaggio copiato!');
+      _showSnack(l10n.copySuccess);
     } catch (e) {
-      _showSnack('Errore nella copia');
+      _showSnack(l10n.copyError);
     }
   }
 
   void _showJoinRoomDialog() {
     final controller = TextEditingController();
     final roomProvider = Provider.of<RoomProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
 
     showCupertinoDialog(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
-        title: const Text(
-          'Unisciti al mattoncino',
-          style: TextStyle(fontSize: 18),
+        title: Text(
+          l10n.joinRoomTitle,
+          style: const TextStyle(fontSize: 18),
         ),
         content: Padding(
           padding: const EdgeInsets.only(top: 20),
           child: CupertinoTextField(
             controller: controller,
-            placeholder: 'Codice a 9 cifre',
+            placeholder: l10n.joinRoomPlaceholder,
             maxLength: 9,
             textCapitalization: TextCapitalization.characters,
             textAlign: TextAlign.center,
@@ -186,7 +185,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annulla'),
+            child: Text(l10n.cancelLabel),
           ),
           CupertinoDialogAction(
             isDefaultAction: true,
@@ -201,7 +200,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                 }
               }
             },
-            child: const Text('Unisciti'),
+            child: Text(l10n.joinLabel),
           ),
         ],
       ),
@@ -210,6 +209,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
@@ -223,12 +223,17 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
 
             // Mostra schermata di fallimento se la sessione è fallita
             if (_sessionFailed) {
-              return _buildFailedScreen(context, roomProvider);
+              return _buildFailedScreen(context, roomProvider, l10n);
             }
 
             // Mostra schermata di successo se la sessione è conclusa
             if (_sessionCompleted) {
-              return _buildCompletedScreen(context, roomProvider, pomodoroProvider);
+              return _buildCompletedScreen(
+                context,
+                roomProvider,
+                pomodoroProvider,
+                l10n,
+              );
             }
 
             final hasRoom = roomProvider.hasRoom;
@@ -273,7 +278,11 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
     );
   }
 
-  Widget _buildFailedScreen(BuildContext context, RoomProvider roomProvider) {
+  Widget _buildFailedScreen(
+    BuildContext context,
+    RoomProvider roomProvider,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Column(
@@ -287,7 +296,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            'SESSIONE FALLITA',
+            l10n.failedTitle,
             style: AppTypography.headline.copyWith(
               color: Colors.red,
               letterSpacing: 2,
@@ -295,7 +304,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Qualcuno ha lasciato l\'app durante una sessione di Deep Building.',
+            l10n.failedMessageGroup,
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -316,9 +325,9 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                 color: AppColors.cta,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
-              child: const Text(
-                'TORNA INDIETRO',
-                style: TextStyle(
+              child: Text(
+                l10n.failedCtaGroup,
+                style: const TextStyle(
                   color: Colors.black,
                   fontWeight: FontWeight.w900,
                   fontSize: 18,
@@ -335,6 +344,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
     BuildContext context,
     RoomProvider roomProvider,
     PomodoroProvider pomodoroProvider,
+    AppLocalizations l10n,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -352,12 +362,16 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                     _sessionCompleted = false;
                   });
                 },
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(AppIcons.back, color: AppColors.textPrimary, size: 28),
+                    const Icon(
+                      AppIcons.back,
+                      color: AppColors.textPrimary,
+                      size: 28,
+                    ),
                     Text(
-                      'Back',
-                      style: TextStyle(
+                      l10n.backButton,
+                      style: const TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -375,7 +389,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
 
           // Titolo
           Text(
-            'Complimenti!',
+            l10n.successTitle,
             style: AppTypography.headline.copyWith(
               fontSize: 32,
               fontWeight: FontWeight.w900,
@@ -385,8 +399,8 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
           ),
           const SizedBox(height: AppSpacing.sm),
           // Sottotitolo
-          const Text(
-            'Avete costruito un nuovo mattoncino',
+          Text(
+            l10n.successSubtitleGroup,
             style: AppTypography.body,
             textAlign: TextAlign.center,
           ),
@@ -417,15 +431,15 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
 
           const SizedBox(height: AppSpacing.xl),
           // Testo motivazionale
-          const Text(
-            'Ottimo lavoro di squadra!\nOgni esame si prepara un mattoncino alla volta.',
+          Text(
+            l10n.successMotivationGroup,
             style: AppTypography.body,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.md),
           // Contatore mattoncini
           Text(
-            '${pomodoroProvider.completedPomodoros} ${pomodoroProvider.completedPomodoros == 1 ? 'mattoncino costruito' : 'mattoncini costruiti'}',
+            l10n.bricksBuiltCount(pomodoroProvider.completedPomodoros),
             style: AppTypography.subtitle.copyWith(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -456,10 +470,10 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                   ),
                 ],
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'Continua a costruire',
-                  style: TextStyle(
+                  l10n.successCta,
+                  style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.w900,
                     fontSize: 18,
@@ -481,6 +495,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
     bool isOwner,
     bool isSessionActive,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         CupertinoButton(
@@ -492,12 +507,12 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
             }
             if (mounted) navigator.pop();
           },
-          child: const Row(
+          child: Row(
             children: [
-              Icon(AppIcons.back, color: AppColors.textPrimary, size: 28),
+              const Icon(AppIcons.back, color: AppColors.textPrimary, size: 28),
               Text(
-                'Back',
-                style: TextStyle(
+                l10n.backButton,
+                style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
@@ -517,8 +532,8 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                 opacity: pomodoroProvider.isBurnMode ? 1.0 : 0.4,
                 child: Image.asset(
                   AppAssets.brickyBurnSmall,
-                  width: 16,
-                  height: 16,
+                  width: 32,
+                  height: 32,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -557,6 +572,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
     RoomProvider provider,
     PomodoroProvider pomodoroProvider,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         const SizedBox(height: AppSpacing.md),
@@ -576,9 +592,9 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
             ),
             child: provider.isCreatingRoom
                 ? const CupertinoActivityIndicator()
-                : const Text(
-                    'CREA STANZA',
-                    style: TextStyle(
+                : Text(
+                    l10n.createRoomLabel,
+                    style: const TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
@@ -600,9 +616,9 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                   height: 20,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'Unisciti al mattoncino',
-                  style: TextStyle(color: AppColors.textPrimary),
+                Text(
+                  l10n.joinBrickLabel,
+                  style: const TextStyle(color: AppColors.textPrimary),
                 ),
               ],
             ),
@@ -613,6 +629,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
   }
 
   Widget _buildSetupTimer(PomodoroProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     return AppDecorations.glassContainer(
       padding: const EdgeInsets.all(AppSpacing.sm),
       borderRadius: BorderRadius.circular(155),
@@ -629,7 +646,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                   _formatDuration(provider.defaultWorkDuration),
                   style: AppTypography.timerLarge,
                 ),
-                const Text('IMPOSTA TEMPO', style: AppTypography.label),
+                Text(l10n.setupTimeLabel, style: AppTypography.label),
               ],
             ),
             _buildTimerPoints(),
@@ -790,6 +807,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
   }
 
   Widget _buildWaitingTimer(PomodoroProvider provider, bool isOwner) {
+    final l10n = AppLocalizations.of(context)!;
     // Chi non è owner non può modificare la durata
     if (!isOwner) {
       return AppDecorations.glassContainer(
@@ -821,7 +839,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'IN ATTESA',
+                    l10n.waitingLabel,
                     style: AppTypography.label.copyWith(
                       color: AppColors.textSecondary,
                       letterSpacing: 2,
@@ -829,7 +847,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "L'host avvierà la sessione",
+                    l10n.waitingSubtitle,
                     style: AppTypography.caption.copyWith(
                       fontSize: 12,
                       color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -943,6 +961,7 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
   ) {
     final session = pomodoroProvider.currentSession;
     final isRunning = pomodoroProvider.isRunning;
+    final l10n = AppLocalizations.of(context)!;
 
     // Se non c'è stanza, non mostrare azioni (gestite nella sezione create/join)
     if (!hasRoom) {
@@ -968,10 +987,10 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
               borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(color: Colors.red, width: 2),
             ),
-            child: const Center(
+            child: Center(
               child: Text(
-                'STOP',
-                style: TextStyle(
+                l10n.stopLabel,
+                style: const TextStyle(
                   color: Colors.red,
                   fontWeight: FontWeight.w900,
                   fontSize: 18,
@@ -1000,10 +1019,10 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
               },
               child: AppDecorations.glassContainer(
                 padding: const EdgeInsets.symmetric(vertical: 18),
-                child: const Center(
+                child: Center(
                   child: Text(
-                    'ESCI',
-                    style: TextStyle(
+                    l10n.exitLabel,
+                    style: const TextStyle(
                       color: Colors.red,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1026,10 +1045,10 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
                   color: AppColors.cta,
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
-                    'INIZIA',
-                    style: TextStyle(
+                    l10n.startGroupLabel,
+                    style: const TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1058,10 +1077,10 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: Colors.red, width: 2),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
-            'ESCI DALLA STANZA',
-            style: TextStyle(
+            l10n.exitRoomLabel,
+            style: const TextStyle(
               color: Colors.red,
               fontWeight: FontWeight.w900,
               fontSize: 16,
@@ -1073,13 +1092,14 @@ class _GroupRoomScreenState extends State<GroupRoomScreen>
   }
 
   String _getSessionText(SessionType type) {
+    final l10n = AppLocalizations.of(context)!;
     switch (type) {
       case SessionType.work:
-        return 'STUDIO';
+        return l10n.sessionWorkGroupLabel;
       case SessionType.shortBreak:
-        return 'PAUSA';
+        return l10n.sessionShortBreakLabel;
       case SessionType.longBreak:
-        return 'RELAX';
+        return l10n.sessionLongBreakLabel;
     }
   }
 
@@ -1319,8 +1339,8 @@ class _AnimatedBrickyBuilderState extends State<_AnimatedBrickyBuilder>
 
     // Scegli l'immagine in base al burn mode
     final assetPath = widget.isBurnMode
-        ? AppAssets.brickyBurn  // con fuoco (burn mode attivo)
-        : AppAssets.brickyLogo; // normale (burn mode spento)
+        ? AppAssets.brickyLogo  // normale (burn mode attivo)
+        : AppAssets.brickyBurn; // con fuoco (burn mode spento)
 
     return AnimatedBuilder(
       animation: _floatController,

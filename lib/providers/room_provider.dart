@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:powerful_students/models/group_room.dart';
+import 'package:powerful_students/l10n/app_localizations.dart';
 
 class RoomException implements Exception {
   RoomException(this.message);
@@ -42,6 +43,11 @@ class RoomProvider extends ChangeNotifier {
   CollectionReference<Map<String, dynamic>> get _roomsRef =>
       _firestore.collection('rooms');
 
+  AppLocalizations get _l10n {
+    final locale = WidgetsBinding.instance.platformDispatcher.locale;
+    return lookupAppLocalizations(locale);
+  }
+
   Future<void> createRoom() async {
     if (_isCreatingRoom) return;
 
@@ -63,16 +69,16 @@ class RoomProvider extends ChangeNotifier {
 
       await _subscribeToRoom(code);
     } on FirebaseException catch (e, stackTrace) {
-      _setError('Impossibile creare la stanza. Riprova più tardi.');
+      _setError(_l10n.roomCreateFailed);
       debugPrint('Firebase createRoom error: ${e.message}\n$stackTrace');
       throw RoomException(
-        lastError ?? 'Errore durante la creazione della stanza.',
+        lastError ?? _l10n.roomCreateError,
       );
     } catch (e, stackTrace) {
-      _setError('Errore sconosciuto durante la creazione della stanza.');
+      _setError(_l10n.roomCreateError);
       debugPrint('createRoom error: $e\n$stackTrace');
       throw RoomException(
-        lastError ?? 'Errore durante la creazione della stanza.',
+        lastError ?? _l10n.roomCreateError,
       );
     } finally {
       _isCreatingRoom = false;
@@ -86,7 +92,7 @@ class RoomProvider extends ChangeNotifier {
 
     if (!isValidRoomCode(normalizedCode)) {
       debugPrint('❌ JOIN: Codice non valido');
-      throw RoomException('Il codice stanza non è valido.');
+      throw RoomException(_l10n.roomJoinInvalidCode);
     }
 
     if (_isJoiningRoom) {
@@ -106,7 +112,7 @@ class RoomProvider extends ChangeNotifier {
         final snapshot = await transaction.get(docRef);
         if (!snapshot.exists) {
           debugPrint('❌ JOIN: Stanza non trovata in Firestore');
-          throw RoomException('Stanza non trovata.');
+          throw RoomException(_l10n.roomNotFound);
         }
 
         debugPrint('✅ JOIN: Stanza trovata, aggiungo membro $_memberId');
@@ -142,13 +148,13 @@ class RoomProvider extends ChangeNotifier {
       debugPrint('❌ JOIN: RoomException - ${e.message}');
       rethrow;
     } on FirebaseException catch (e, stackTrace) {
-      _setError('Impossibile entrare nella stanza. Riprova.');
+      _setError(_l10n.roomJoinFailed);
       debugPrint('❌ JOIN: Firebase error: ${e.message}\n$stackTrace');
-      throw RoomException(lastError ?? 'Impossibile entrare nella stanza.');
+      throw RoomException(lastError ?? _l10n.roomJoinFailed);
     } catch (e, stackTrace) {
-      _setError('Errore sconosciuto durante l\'accesso alla stanza.');
+      _setError(_l10n.roomJoinError);
       debugPrint('❌ JOIN: Unexpected error: $e\n$stackTrace');
-      throw RoomException(lastError ?? 'Impossibile entrare nella stanza.');
+      throw RoomException(lastError ?? _l10n.roomJoinError);
     } finally {
       _isJoiningRoom = false;
       notifyListeners();
@@ -198,7 +204,7 @@ class RoomProvider extends ChangeNotifier {
       });
     } catch (e, stackTrace) {
       debugPrint('leaveRoom error: $e\n$stackTrace');
-      throw RoomException('Impossibile uscire dalla stanza in questo momento.');
+      throw RoomException(_l10n.roomLeaveFailed);
     } finally {
       _clearSubscription();
       _resetState();
@@ -231,7 +237,7 @@ class RoomProvider extends ChangeNotifier {
           },
           onError: (Object error, StackTrace stackTrace) {
             debugPrint('Room subscription error: $error\n$stackTrace');
-            _setError('Errore nel recupero della stanza.');
+            _setError(_l10n.roomFetchError);
           },
         );
   }
@@ -260,9 +266,7 @@ class RoomProvider extends ChangeNotifier {
       code = _generateRoomCode();
       attempts++;
     }
-    throw RoomException(
-      'Non è stato possibile generare un codice stanza univoco.',
-    );
+    throw RoomException(_l10n.roomCodeGenerateError);
   }
 
   static String _generateRoomCode() {

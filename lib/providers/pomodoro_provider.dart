@@ -1,21 +1,27 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:powerful_students/models/study_session.dart';
 import 'package:powerful_students/models/group_room.dart';
 import 'package:powerful_students/providers/room_provider.dart';
 import 'package:powerful_students/services/pomodoro_notification_service.dart';
 import 'package:powerful_students/services/pomodoro_sync_service.dart';
 import 'package:powerful_students/services/pomodoro_timer_service.dart';
+import 'package:powerful_students/services/stats_service.dart';
 
 class PomodoroProvider extends ChangeNotifier {
   PomodoroProvider({
     PomodoroNotificationService? notificationService,
     PomodoroSyncService? syncService,
     PomodoroTimerService? timerService,
+    StatsService? statsService,
+    String? userId,
   })  : _notificationService =
             notificationService ?? PomodoroNotificationService(),
         _syncService = syncService ?? PomodoroSyncService(),
-        _timerService = timerService ?? PomodoroTimerService();
+        _timerService = timerService ?? PomodoroTimerService(),
+        _statsService = statsService ?? StatsService(),
+        _userId = userId;
 
   StudySession? _currentSession;
   bool _isRunning = false;
@@ -23,10 +29,13 @@ class PomodoroProvider extends ChangeNotifier {
   StudyMode _selectedMode = StudyMode.solo;
   bool _isBurnMode = false;
   int _completedPomodoros = 0;
+  int _totalMinutesToday = 0; // Minuti totali studiati oggi
   int _defaultWorkDuration = StudySession.workDuration; // 25 minuti in secondi
   final PomodoroNotificationService _notificationService;
   final PomodoroSyncService _syncService;
   final PomodoroTimerService _timerService;
+  final StatsService _statsService;
+  String? _userId; // ID utente per salvare stats
 
   // Getters
   StudySession? get currentSession => _currentSession;
@@ -34,8 +43,16 @@ class PomodoroProvider extends ChangeNotifier {
   StudyMode get selectedMode => _selectedMode;
   bool get isBurnMode => _isBurnMode;
   int get completedPomodoros => _completedPomodoros;
+  int get totalMinutesToday => _totalMinutesToday;
   int get defaultWorkDuration => _defaultWorkDuration;
   bool get soundEnabled => _notificationService.soundEnabled;
+
+  // Setter per userId (usato dopo auth)
+  void setUserId(String userId) {
+    _userId = userId;
+    // Carica le stats di oggi quando l'userId diventa disponibile
+    unawaited(initializeStats());
+  }
 
   // Toggle per il suono
   void toggleSound() {
@@ -64,6 +81,45 @@ class PomodoroProvider extends ChangeNotifier {
         debugPrint('Stack trace: $stackTrace');
       }
     });
+  }
+
+  /// Inizializza le statistiche giornaliere
+  /// Verifica se è cambiato giorno e resetta/carica i dati
+  Future<void> initializeStats() async {
+    if (_userId == null) {
+      debugPrint('⚠️ UserId non disponibile, skip init stats');
+      return;
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastStatsDate = prefs.getString('last_stats_date');
+      final DateTime? lastDate = lastStatsDate != null ? DateTime.tryParse(lastStatsDate) : null;
+
+      // Verifica se è necessario resettare (nuovo giorno)
+      if (StatsService.shouldReset(lastDate)) {
+        debugPrint('🔄 Nuovo giorno rilevato - reset stats');
+        _completedPomodoros = 0;
+        _totalMinutesToday = 0;
+
+        // Aggiorna la data di ultimo reset
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        await prefs.setString('last_stats_date', today.toIso8601String());
+      }
+
+      // Carica stats di oggi da Firestore
+      final todayStats = await _statsService.getTodayStats(_userId!);
+      if (todayStats != null) {
+        _completedPomodoros = todayStats.completedPomodoros;
+        _totalMinutesToday = todayStats.totalMinutes;
+        debugPrint('📊 Stats caricate da Firestore: $_completedPomodoros mattoncini, $_totalMinutesToday minuti');
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Errore init stats: $e');
+    }
   }
 
   // Seleziona modalità di studio
@@ -193,11 +249,21 @@ class PomodoroProvider extends ChangeNotifier {
       _isRunning = false;
 
       final sessionType = _currentSession?.type ?? SessionType.work;
+      final sessionMinutes = (_currentSession?.duration ?? 0) ~/ 60;
       _notificationService.handleSessionCompletionFeedback(sessionType);
 
-      // Incrementa il contatore pomodori completati
+      // Incrementa il contatore pomodori completati e salva su Firestore
       if (_currentSession?.type == SessionType.work) {
         _completedPomodoros++;
+        _totalMinutesToday += sessionMinutes;
+
+        // Salva stats su Firestore (async, non-blocking)
+        if (_userId != null) {
+          unawaited(_statsService.incrementTodayPomodoros(_userId!, sessionMinutes));
+          debugPrint('💾 Stats salvate: $_completedPomodoros mattoncini, $_totalMinutesToday min');
+        } else {
+          debugPrint('⚠️ UserId non disponibile, stats non salvate su Firestore');
+        }
       }
 
       // Non auto-transire alla prossima sessione

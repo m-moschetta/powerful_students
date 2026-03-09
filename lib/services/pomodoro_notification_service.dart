@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:powerful_students/models/study_session.dart';
 import 'package:vibration/vibration.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter/widgets.dart';
+import 'package:powerful_students/l10n/app_localizations.dart';
 
 class PomodoroNotificationService {
   PomodoroNotificationService();
@@ -17,6 +18,11 @@ class PomodoroNotificationService {
   // Toggle per abilitare/disabilitare il suono
   bool _soundEnabled = true;
   bool get soundEnabled => _soundEnabled;
+
+  AppLocalizations get _l10n {
+    final locale = WidgetsBinding.instance.platformDispatcher.locale;
+    return lookupAppLocalizations(locale);
+  }
 
   void setSoundEnabled(bool enabled) {
     _soundEnabled = enabled;
@@ -178,22 +184,21 @@ class PomodoroNotificationService {
   (String title, String body) _notificationTextFor(SessionType type) {
     if (type == SessionType.work) {
       return (
-        'Tempo di pausa!',
-        'Ottimo lavoro! Goditi una pausa di 5 minuti.',
+        _l10n.notificationBreakTitle,
+        _l10n.notificationBreakBody,
       );
     }
     return (
-      'Tempo di studiare!',
-      'La pausa è finita. Iniziamo un nuovo pomodoro!',
+      _l10n.notificationWorkTitle,
+      _l10n.notificationWorkBody,
     );
   }
 
   NotificationDetails _notificationDetails() {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'pomodoro_channel',
-      'Pomodoro Timer',
-      channelDescription: 'Notifiche per il timer Pomodoro',
+      _l10n.notificationChannelName,
+      channelDescription: _l10n.notificationChannelDescription,
       importance: Importance.high,
       priority: Priority.high,
     );
@@ -204,7 +209,7 @@ class PomodoroNotificationService {
       presentSound: true,
     );
 
-    return const NotificationDetails(
+    return NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );

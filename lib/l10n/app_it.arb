@@ -1,0 +1,86 @@
+{
+  "@@locale": "it",
+  "appTitle": "Powerful Buddy",
+  "modeSelectionSubtitle": "Tutto si costruisce\nun mattoncino alla volta.",
+  "modeSelectionQuestion": "Come vuoi costruire oggi?",
+  "modeOptionSoloTitle": "Solo",
+  "modeOptionSoloSubtitle": "Costruisci individualmente",
+  "modeOptionGroupTitle": "Group",
+  "modeOptionGroupSubtitle": "Costruisci in compagnia",
+  "modeSelectionCta": "INIZIA A COSTRUIRE",
+  "backButton": "Indietro",
+  "failedTitle": "SESSIONE FALLITA",
+  "failedMessageSolo": "Hai lasciato l'app durante una sessione di Deep Building.",
+  "failedMessageGroup": "Qualcuno ha lasciato l'app durante una sessione di Deep Building.",
+  "failedCtaSolo": "RIPROVA A COSTRUIRE",
+  "failedCtaGroup": "TORNA INDIETRO",
+  "successTitle": "Complimenti!",
+  "successSubtitleSolo": "Hai costruito un nuovo mattoncino",
+  "successSubtitleGroup": "Avete costruito un nuovo mattoncino",
+  "successMotivationSolo": "Ricorda: ogni esame si prepara\nun mattoncino alla volta.",
+  "successMotivationGroup": "Ottimo lavoro di squadra!\nOgni esame si prepara un mattoncino alla volta.",
+  "successCta": "Continua a costruire",
+  "bricksBuiltCount": "{count, plural, one{# mattoncino costruito} other{# mattoncini costruiti}}",
+  "@bricksBuiltCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bricksCountLabel": "{count, plural, one{# mattoncino} other{# mattoncini}}",
+  "@bricksCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "setupTimeLabel": "IMPOSTA TEMPO",
+  "sessionWorkSoloLabel": "CONCENTRATI",
+  "sessionWorkGroupLabel": "STUDIO",
+  "sessionShortBreakLabel": "PAUSA",
+  "sessionLongBreakLabel": "RELAX",
+  "stopLabel": "STOP",
+  "startBuildLabel": "INIZIA A COSTRUIRE",
+  "startGroupLabel": "INIZIA",
+  "createRoomLabel": "CREA STANZA",
+  "joinBrickLabel": "Unisciti al mattoncino",
+  "joinRoomTitle": "Unisciti al mattoncino",
+  "joinRoomPlaceholder": "Codice a 9 cifre",
+  "cancelLabel": "Annulla",
+  "joinLabel": "Unisciti",
+  "waitingLabel": "IN ATTESA",
+  "waitingSubtitle": "L'host avvierà la sessione",
+  "exitLabel": "ESCI",
+  "exitRoomLabel": "ESCI DALLA STANZA",
+  "shareRoomMessage": "Unisciti alla mia sessione di studio!\nCodice: {roomCode}\nDurata: {minutes, plural, one{# minuto} other{# minuti}}",
+  "@shareRoomMessage": {
+    "placeholders": {
+      "roomCode": {},
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "shareRoomSubject": "Codice stanza Powerful Buddy",
+  "shareError": "Errore nella condivisione",
+  "copySuccess": "Messaggio copiato!",
+  "copyError": "Errore nella copia",
+  "genericError": "Si è verificato un errore. Riprova.",
+  "roomCreateFailed": "Impossibile creare la stanza. Riprova più tardi.",
+  "roomCreateError": "Errore durante la creazione della stanza.",
+  "roomJoinInvalidCode": "Il codice stanza non è valido.",
+  "roomNotFound": "Stanza non trovata.",
+  "roomJoinFailed": "Impossibile entrare nella stanza. Riprova.",
+  "roomJoinError": "Errore sconosciuto durante l'accesso alla stanza.",
+  "roomLeaveFailed": "Impossibile uscire dalla stanza in questo momento.",
+  "roomFetchError": "Errore nel recupero della stanza.",
+  "roomCodeGenerateError": "Non è stato possibile generare un codice stanza univoco.",
+  "notificationBreakTitle": "Tempo di pausa!",
+  "notificationBreakBody": "Ottimo lavoro! Goditi una pausa di 5 minuti.",
+  "notificationWorkTitle": "Tempo di studiare!",
+  "notificationWorkBody": "La pausa è finita. Iniziamo un nuovo pomodoro!",
+  "notificationChannelName": "Pomodoro Timer",
+  "notificationChannelDescription": "Notifiche per il timer Pomodoro"
+}

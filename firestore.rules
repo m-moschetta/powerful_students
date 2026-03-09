@@ -1,8 +1,22 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Group study rooms
     match /rooms/{roomId} {
-      allow read, write: if true; // tighten as needed
+      allow read, write: if true; // TODO: tighten with auth
+    }
+
+    // Daily statistics (personal stats)
+    // Document ID format: userId_YYYY-MM-DD
+    match /daily_stats/{statsId} {
+      allow read, write: if true; // TODO: restrict to owner only when auth is implemented
+      // Future with Firebase Auth:
+      // allow read, write: if statsId.matches('^' + request.auth.uid + '_.*$');
+    }
+
+    // Student profiles (if/when implemented)
+    match /students/{studentId} {
+      allow read, write: if true; // TODO: tighten with auth
     }
   }
 }

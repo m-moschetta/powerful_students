@@ -11,70 +11,104 @@
 #import <audioplayers_darwin/AudioplayersDarwinPlugin.h>
 #define HAS_AUDIOPLAYERS_DARWIN 1
 #else
-#define HAS_AUDIOPLAYERS_DARWIN 0
+@import audioplayers_darwin;
+#define HAS_AUDIOPLAYERS_DARWIN 1
 #endif
 
 #if __has_include(<cloud_firestore/FLTFirebaseFirestorePlugin.h>)
 #import <cloud_firestore/FLTFirebaseFirestorePlugin.h>
 #define HAS_CLOUD_FIRESTORE 1
 #else
-#define HAS_CLOUD_FIRESTORE 0
+@import cloud_firestore;
+#define HAS_CLOUD_FIRESTORE 1
 #endif
 
 #if __has_include(<device_info_plus/FPPDeviceInfoPlusPlugin.h>)
 #import <device_info_plus/FPPDeviceInfoPlusPlugin.h>
 #define HAS_DEVICE_INFO_PLUS 1
 #else
-#define HAS_DEVICE_INFO_PLUS 0
+@import device_info_plus;
+#define HAS_DEVICE_INFO_PLUS 1
 #endif
 
 #if __has_include(<flutter_local_notifications/FlutterLocalNotificationsPlugin.h>)
 #import <flutter_local_notifications/FlutterLocalNotificationsPlugin.h>
 #define HAS_FLUTTER_LOCAL_NOTIFICATIONS 1
 #else
-#define HAS_FLUTTER_LOCAL_NOTIFICATIONS 0
+@import flutter_local_notifications;
+#define HAS_FLUTTER_LOCAL_NOTIFICATIONS 1
 #endif
 
 #if __has_include(<flutter_timezone/FlutterTimezonePlugin.h>)
 #import <flutter_timezone/FlutterTimezonePlugin.h>
 #define HAS_FLUTTER_TIMEZONE 1
 #else
-#define HAS_FLUTTER_TIMEZONE 0
+@import flutter_timezone;
+#define HAS_FLUTTER_TIMEZONE 1
 #endif
 
 #if __has_include(<firebase_auth/FLTFirebaseAuthPlugin.h>)
 #import <firebase_auth/FLTFirebaseAuthPlugin.h>
 #define HAS_FIREBASE_AUTH 1
 #else
-#define HAS_FIREBASE_AUTH 0
+@import firebase_auth;
+#define HAS_FIREBASE_AUTH 1
 #endif
 
 #if __has_include(<firebase_core/FLTFirebaseCorePlugin.h>)
 #import <firebase_core/FLTFirebaseCorePlugin.h>
 #define HAS_FIREBASE_CORE 1
 #else
-#define HAS_FIREBASE_CORE 0
+@import firebase_core;
+#define HAS_FIREBASE_CORE 1
 #endif
 
 #if __has_include(<path_provider_foundation/PathProviderPlugin.h>)
 #import <path_provider_foundation/PathProviderPlugin.h>
 #define HAS_PATH_PROVIDER_FOUNDATION 1
 #else
-#define HAS_PATH_PROVIDER_FOUNDATION 0
+@import path_provider_foundation;
+#define HAS_PATH_PROVIDER_FOUNDATION 1
+#endif
+
+#if __has_include(<package_info_plus/FPPPackageInfoPlusPlugin.h>)
+#import <package_info_plus/FPPPackageInfoPlusPlugin.h>
+#define HAS_PACKAGE_INFO_PLUS 1
+#else
+@import package_info_plus;
+#define HAS_PACKAGE_INFO_PLUS 1
 #endif
 
 #if __has_include(<share_plus/FPPSharePlusPlugin.h>)
 #import <share_plus/FPPSharePlusPlugin.h>
 #define HAS_SHARE_PLUS 1
 #else
-#define HAS_SHARE_PLUS 0
+@import share_plus;
+#define HAS_SHARE_PLUS 1
+#endif
+
+#if __has_include(<shared_preferences_foundation/SharedPreferencesPlugin.h>)
+#import <shared_preferences_foundation/SharedPreferencesPlugin.h>
+#define HAS_SHARED_PREFERENCES_FOUNDATION 1
+#else
+@import shared_preferences_foundation;
+#define HAS_SHARED_PREFERENCES_FOUNDATION 1
 #endif
 
 #if __has_include(<vibration/VibrationPlugin.h>)
 #import <vibration/VibrationPlugin.h>
 #define HAS_VIBRATION 1
 #else
-#define HAS_VIBRATION 0
+@import vibration;
+#define HAS_VIBRATION 1
+#endif
+
+#if __has_include(<wakelock_plus/WakelockPlusPlugin.h>)
+#import <wakelock_plus/WakelockPlusPlugin.h>
+#define HAS_WAKELOCK_PLUS 1
+#else
+@import wakelock_plus;
+#define HAS_WAKELOCK_PLUS 1
 #endif
 
 static BOOL ShouldSkipAudioplayers(void) {
@@ -135,16 +169,34 @@ static BOOL ShouldSkipAudioplayers(void) {
   NSLog(@"path_provider_foundation not available; skipping registration");
 #endif
 
+#if HAS_PACKAGE_INFO_PLUS
+  [FPPPackageInfoPlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPPackageInfoPlusPlugin"]];
+#else
+  NSLog(@"package_info_plus not available; skipping registration");
+#endif
+
 #if HAS_SHARE_PLUS
   [FPPSharePlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPSharePlusPlugin"]];
 #else
   NSLog(@"share_plus not available; skipping registration");
 #endif
 
+#if HAS_SHARED_PREFERENCES_FOUNDATION
+  [SharedPreferencesPlugin registerWithRegistrar:[registry registrarForPlugin:@"SharedPreferencesPlugin"]];
+#else
+  NSLog(@"shared_preferences_foundation not available; skipping registration");
+#endif
+
 #if HAS_VIBRATION
   [VibrationPlugin registerWithRegistrar:[registry registrarForPlugin:@"VibrationPlugin"]];
 #else
   NSLog(@"vibration not available; skipping registration");
+#endif
+
+#if HAS_WAKELOCK_PLUS
+  [WakelockPlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"WakelockPlusPlugin"]];
+#else
+  NSLog(@"wakelock_plus not available; skipping registration");
 #endif
 
 #if HAS_AUDIOPLAYERS_DARWIN

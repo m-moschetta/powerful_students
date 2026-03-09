@@ -1,0 +1,86 @@
+{
+  "@@locale": "en",
+  "appTitle": "Powerful Buddy",
+  "modeSelectionSubtitle": "You build progress,\nbrick by brick.",
+  "modeSelectionQuestion": "How do you build today?",
+  "modeOptionSoloTitle": "Solo",
+  "modeOptionSoloSubtitle": "Build on your own",
+  "modeOptionGroupTitle": "Group",
+  "modeOptionGroupSubtitle": "Build together",
+  "modeSelectionCta": "LET'S BUILD",
+  "backButton": "Back",
+  "failedTitle": "SESSION FAILED",
+  "failedMessageSolo": "You left the app during Deep Building.",
+  "failedMessageGroup": "Someone left the app during a Deep Building session.",
+  "failedCtaSolo": "LET'S BUILD AGAIN",
+  "failedCtaGroup": "GO BACK",
+  "successTitle": "Congrats!",
+  "successSubtitleSolo": "You built a new brick",
+  "successSubtitleGroup": "You built a new brick together",
+  "successMotivationSolo": "Remember: every exam is built\none brick at a time.",
+  "successMotivationGroup": "Great teamwork!\nEvery exam is built one brick at a time.",
+  "successCta": "Keep building",
+  "bricksBuiltCount": "{count, plural, one{# brick built} other{# bricks built}}",
+  "@bricksBuiltCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bricksCountLabel": "{count, plural, one{# brick} other{# bricks}}",
+  "@bricksCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "setupTimeLabel": "SET TIME",
+  "sessionWorkSoloLabel": "FOCUS",
+  "sessionWorkGroupLabel": "STUDY",
+  "sessionShortBreakLabel": "BREAK",
+  "sessionLongBreakLabel": "RELAX",
+  "stopLabel": "STOP",
+  "startBuildLabel": "LET'S BUILD",
+  "startGroupLabel": "START",
+  "createRoomLabel": "CREATE ROOM",
+  "joinBrickLabel": "Join the brick",
+  "joinRoomTitle": "Join the brick",
+  "joinRoomPlaceholder": "9-digit code",
+  "cancelLabel": "Cancel",
+  "joinLabel": "Join",
+  "waitingLabel": "WAITING",
+  "waitingSubtitle": "The host will start the session",
+  "exitLabel": "EXIT",
+  "exitRoomLabel": "LEAVE ROOM",
+  "shareRoomMessage": "Join my study session!\nCode: {roomCode}\nDuration: {minutes, plural, one{# minute} other{# minutes}}",
+  "@shareRoomMessage": {
+    "placeholders": {
+      "roomCode": {},
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "shareRoomSubject": "Powerful Buddy room code",
+  "shareError": "Share error",
+  "copySuccess": "Message copied!",
+  "copyError": "Copy failed",
+  "genericError": "Something went wrong. Try again.",
+  "roomCreateFailed": "Unable to create the room. Please try again later.",
+  "roomCreateError": "Error while creating the room.",
+  "roomJoinInvalidCode": "The room code is invalid.",
+  "roomNotFound": "Room not found.",
+  "roomJoinFailed": "Unable to join the room. Try again.",
+  "roomJoinError": "Unexpected error while joining the room.",
+  "roomLeaveFailed": "Unable to leave the room right now.",
+  "roomFetchError": "Error while fetching the room.",
+  "roomCodeGenerateError": "Could not generate a unique room code.",
+  "notificationBreakTitle": "Break time!",
+  "notificationBreakBody": "Great job! Enjoy a 5-minute break.",
+  "notificationWorkTitle": "Back to work!",
+  "notificationWorkBody": "Break is over. Let's build another brick!",
+  "notificationChannelName": "Pomodoro Timer",
+  "notificationChannelDescription": "Pomodoro timer notifications"
+}
