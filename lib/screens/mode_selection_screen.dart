@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:powerful_students/models/study_session.dart';
 import 'package:powerful_students/providers/pomodoro_provider.dart';
 import 'package:powerful_students/core/design_system.dart';
-import 'package:powerful_students/l10n/app_localizations.dart';
 
 class ModeSelectionScreen extends StatelessWidget {
   const ModeSelectionScreen({super.key});
@@ -16,7 +15,6 @@ class ModeSelectionScreen extends StatelessWidget {
     final selectedMode = pomodoro.selectedMode;
     final hasSelection =
         selectedMode == StudyMode.solo || selectedMode == StudyMode.group;
-    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -32,14 +30,14 @@ class ModeSelectionScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: AppSpacing.xl),
-                      Text(
-                        l10n.appTitle,
+                      const Text(
+                        'Powerful Buddy',
                         style: AppTypography.headline,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      Text(
-                        l10n.modeSelectionSubtitle,
+                      const Text(
+                        'Tutto si costruisce\nun mattoncino alla volta.',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -49,8 +47,8 @@ class ModeSelectionScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        l10n.modeSelectionQuestion,
+                      const Text(
+                        'Come vuoi costruire oggi?',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -65,8 +63,8 @@ class ModeSelectionScreen extends StatelessWidget {
                         child: Column(
                           children: [
                             ModeOptionCard(
-                              title: l10n.modeOptionSoloTitle,
-                              subtitle: l10n.modeOptionSoloSubtitle,
+                              title: 'Solo',
+                              subtitle: 'Costruisci individualmente',
                               imageAsset: AppAssets.brickyLogo,
                               isSelected: selectedMode == StudyMode.solo,
                               onTap: () => pomodoro.selectMode(StudyMode.solo),
@@ -76,8 +74,8 @@ class ModeSelectionScreen extends StatelessWidget {
                               color: AppColors.glassBorder,
                             ),
                             ModeOptionCard(
-                              title: l10n.modeOptionGroupTitle,
-                              subtitle: l10n.modeOptionGroupSubtitle,
+                              title: 'Group',
+                              subtitle: 'Costruisci in compagnia',
                               imageAsset: AppAssets.brickyGroup,
                               isSelected: selectedMode == StudyMode.group,
                               onTap: () => pomodoro.selectMode(StudyMode.group),
@@ -103,9 +101,9 @@ class ModeSelectionScreen extends StatelessWidget {
                                 },
                           color: AppColors.cta, // Rosa per CTA come richiesto
                           borderRadius: BorderRadius.circular(AppRadius.lg),
-                          child: Text(
-                            l10n.modeSelectionCta,
-                            style: const TextStyle(
+                          child: const Text(
+                            'INIZIA A COSTRUIRE',
+                            style: TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.w900,
                               fontSize: 18,

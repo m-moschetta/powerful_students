@@ -8,7 +8,6 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:powerful_students/providers/pomodoro_provider.dart';
 import 'package:powerful_students/models/study_session.dart';
 import 'package:powerful_students/core/design_system.dart';
-import 'package:powerful_students/l10n/app_localizations.dart';
 
 class TimerScreen extends StatefulWidget {
   const TimerScreen({super.key});
@@ -106,7 +105,6 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildFailedScreen(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Column(
@@ -120,7 +118,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            l10n.failedTitle,
+            'SESSIONE FALLITA',
             style: AppTypography.headline.copyWith(
               color: Colors.red,
               letterSpacing: 2,
@@ -128,7 +126,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            l10n.failedMessageSolo,
+            'Hai lasciato l\'app durante una sessione di Deep Building.',
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -146,9 +144,9 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
                 color: AppColors.cta,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
-              child: Text(
-                l10n.failedCtaSolo,
-                style: const TextStyle(
+              child: const Text(
+                'RIPROVA',
+                style: TextStyle(
                   color: Colors.black,
                   fontWeight: FontWeight.w900,
                   fontSize: 18,
@@ -162,7 +160,6 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildSuccessScreen(BuildContext context, PomodoroProvider provider) {
-    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Column(
@@ -171,7 +168,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           const Spacer(),
           // Titolo
           Text(
-            l10n.successTitle,
+            'Complimenti!',
             style: AppTypography.headline.copyWith(
               fontSize: 32,
               fontWeight: FontWeight.w900,
@@ -182,7 +179,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           const SizedBox(height: AppSpacing.sm),
           // Sottotitolo
           Text(
-            l10n.successSubtitleSolo,
+            'Hai costruito un nuovo mattoncino',
             style: AppTypography.body.copyWith(
               fontSize: 16,
               color: AppColors.textSecondary,
@@ -217,7 +214,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           const SizedBox(height: AppSpacing.xl),
           // Testo motivazionale
           Text(
-            l10n.successMotivationSolo,
+            'Ricorda: ogni esame si prepara\nun mattoncino alla volta.',
             style: AppTypography.body.copyWith(
               fontSize: 15,
               color: AppColors.textSecondary,
@@ -228,7 +225,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           const SizedBox(height: AppSpacing.md),
           // Contatore mattoncini
           Text(
-            l10n.bricksBuiltCount(provider.completedPomodoros),
+            '${provider.completedPomodoros} ${provider.completedPomodoros == 1 ? 'mattoncino costruito' : 'mattoncini costruiti'}',
             style: AppTypography.subtitle.copyWith(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -260,10 +257,10 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
                   ),
                 ],
               ),
-              child: Center(
+              child: const Center(
                 child: Text(
-                  l10n.successCta,
-                  style: const TextStyle(
+                  'Continua a costruire',
+                  style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.w900,
                     fontSize: 18,
@@ -280,7 +277,6 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
 
   Widget _buildHeader(BuildContext context, PomodoroProvider provider) {
     final bool isSessionActive = provider.currentSession != null;
-    final l10n = AppLocalizations.of(context)!;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -293,12 +289,12 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
             }
             Navigator.of(context).pop();
           },
-          child: Row(
+          child: const Row(
             children: [
-              const Icon(AppIcons.back, color: AppColors.textPrimary, size: 28),
+              Icon(AppIcons.back, color: AppColors.textPrimary, size: 28),
               Text(
-                l10n.backButton,
-                style: const TextStyle(
+                'Back',
+                style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
@@ -341,8 +337,8 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
                     opacity: provider.isBurnMode ? 1.0 : 0.4,
                     child: Image.asset(
                       AppAssets.brickyBurnSmall,
-                      width: 32,
-                      height: 32,
+                      width: 16,
+                      height: 16,
                       fit: BoxFit.contain,
                     ),
                   ),
@@ -416,7 +412,6 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildSetupTimer(PomodoroProvider provider) {
-    final l10n = AppLocalizations.of(context)!;
     return AppDecorations.glassContainer(
       padding: const EdgeInsets.all(AppSpacing.sm),
       borderRadius: BorderRadius.circular(155),
@@ -433,7 +428,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
                   _formatDuration(provider.defaultWorkDuration),
                   style: AppTypography.timerLarge,
                 ),
-                Text(l10n.setupTimeLabel, style: AppTypography.label),
+                const Text('IMPOSTA TEMPO', style: AppTypography.label),
               ],
             ),
             _buildTimerPoints(),
@@ -541,7 +536,6 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
     final session = provider.currentSession;
     final isRunning = provider.isRunning;
     final isSoloMode = provider.selectedMode == StudyMode.solo;
-    final l10n = AppLocalizations.of(context)!;
 
     // Se c'è una sessione attiva, mostra solo STOP (per studio singolo)
     if (session != null && isRunning) {
@@ -562,10 +556,10 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
               borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(color: Colors.red, width: 2),
             ),
-            child: Center(
+            child: const Center(
               child: Text(
-                l10n.stopLabel,
-                style: const TextStyle(
+                'STOP',
+                style: TextStyle(
                   color: Colors.red,
                   fontWeight: FontWeight.w900,
                   fontSize: 18,
@@ -602,10 +596,10 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
             ),
           ],
         ),
-        child: Center(
+        child: const Center(
           child: Text(
-            l10n.startBuildLabel,
-            style: const TextStyle(
+            'START STUDY',
+            style: TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.w900,
               fontSize: 18,
@@ -632,7 +626,7 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
           ),
           const SizedBox(width: 10),
           Text(
-            AppLocalizations.of(context)!.bricksCountLabel(count),
+            '$count ${count == 1 ? 'MATTONCINO' : 'MATTONCINI'}',
             style: AppTypography.subtitle.copyWith(letterSpacing: 1),
           ),
         ],
@@ -641,14 +635,13 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
   }
 
   String _getSessionText(SessionType type) {
-    final l10n = AppLocalizations.of(context)!;
     switch (type) {
       case SessionType.work:
-        return l10n.sessionWorkSoloLabel;
+        return 'CONCENTRATI';
       case SessionType.shortBreak:
-        return l10n.sessionShortBreakLabel;
+        return 'PAUSA';
       case SessionType.longBreak:
-        return l10n.sessionLongBreakLabel;
+        return 'RELAX';
     }
   }
 
@@ -888,8 +881,8 @@ class _AnimatedBrickyBuilderState extends State<_AnimatedBrickyBuilder>
 
     // Scegli l'immagine in base al burn mode
     final assetPath = widget.isBurnMode
-        ? AppAssets.brickyLogo  // normale (burn mode attivo)
-        : AppAssets.brickyBurn; // con fuoco (burn mode spento)
+        ? AppAssets.brickyBurn  // con fuoco (burn mode attivo)
+        : AppAssets.brickyLogo; // normale (burn mode spento)
 
     return AnimatedBuilder(
       animation: _floatController,
