@@ -1,30 +1,39 @@
-// This is a basic Flutter widget test.
+// Widget tests for Powerful Students app
+// 
+// Note: Full widget tests require proper setup of:
+// - Flutter localizations
+// - Firebase initialization  
+// - Platform-specific plugins (notifications, audio, etc.)
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// For now, we focus on unit testing the business logic in:
+// - test/providers/pomodoro_provider_test.dart
+// - test/providers/chat_provider_test.dart  
+// - test/models/*.dart
+// - test/services/*.dart
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:powerful_students/main.dart';
+import 'package:powerful_students/models/study_session.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('Smoke Tests', () {
+    test('StudySession constants are correct', () {
+      expect(StudySession.workDuration, equals(25 * 60));
+      expect(StudySession.shortBreakDuration, equals(5 * 60));
+      expect(StudySession.longBreakDuration, equals(15 * 60));
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    test('StudyMode has expected values', () {
+      expect(StudyMode.values.length, equals(3));
+      expect(StudyMode.values, contains(StudyMode.solo));
+      expect(StudyMode.values, contains(StudyMode.group));
+      expect(StudyMode.values, contains(StudyMode.buddy));
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('SessionType has expected values', () {
+      expect(SessionType.values.length, equals(3));
+      expect(SessionType.values, contains(SessionType.work));
+      expect(SessionType.values, contains(SessionType.shortBreak));
+      expect(SessionType.values, contains(SessionType.longBreak));
+    });
   });
 }

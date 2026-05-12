@@ -3,9 +3,26 @@ import 'package:flutter/foundation.dart';
 import 'package:powerful_students/models/daily_stats.dart';
 
 /// Service per gestire le statistiche giornaliere su Firestore
+/// 
+/// Supporta dependency injection per testabilità:
+/// ```dart
+/// // Production
+/// final service = StatsService();
+/// 
+/// // Testing
+/// final mockFirestore = MockFirebaseFirestore();
+/// final service = StatsService(firestore: mockFirestore);
+/// ```
 class StatsService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   static const String _collectionName = 'daily_stats';
+
+  /// Creates a StatsService instance.
+  /// 
+  /// If [firestore] is not provided, uses [FirebaseFirestore.instance].
+  /// Pass a mock for testing.
+  StatsService({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   /// Salva o aggiorna le statistiche di oggi
   Future<void> saveTodayStats(DailyStats stats) async {

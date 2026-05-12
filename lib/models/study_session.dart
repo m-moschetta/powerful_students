@@ -1,6 +1,7 @@
 enum StudyMode {
   solo,
   group,
+  buddy,
 }
 
 enum SessionType {

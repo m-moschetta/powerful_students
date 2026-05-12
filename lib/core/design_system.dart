@@ -9,21 +9,20 @@ class AppColors {
   static const primary = Color(0xFFA9FFA6); // Verde (Branding principale)
   static const cta = Color(0xFFF4C3F1); // Rosa (Call to Action)
   static const accent = Color(0xFFA9FFA6); // Alias per il verde
+  static const danger = Color(0xFFFF3B30); // Rosso iOS
 
-  // Backgrounds - Gradienti con più contrasto
-  static const bgStart = Color(0xFFD1D1D1);
-  static const bgEnd = Color(0xFFB0B0B0);
-
+  // Backgrounds
   static const background = Color(0xFFF2F2F7);
   static const surface = Color(0xFFFFFFFF);
+  static const separator = Color(0xFFE5E5EA); // Separatore iOS light
 
-  // Vetro (Glassmorphism) con più contrasto
+  // Vetro (Glassmorphism)
   static Color glass(double opacity) => Colors.white.withValues(alpha: opacity);
-  static const glassBorder = Color(0x66000000); // Più scuro per contrasto
+  static const glassBorder = Color(0x66000000);
 
-  // Testi con massimo contrasto
+  // Testi
   static const textPrimary = Color(0xFF000000);
-  static const textSecondary = Color(0xFF1C1C1E); // iOS Darker Secondary Label
+  static const textSecondary = Color(0xFF1C1C1E);
 
   static Color textSecondaryWith(double opacity) {
     return textSecondary.withValues(alpha: opacity);
@@ -43,7 +42,7 @@ class AppTypography {
 
   static const headline = TextStyle(
     fontSize: 28,
-    fontWeight: FontWeight.w800, // Più bold per contrasto
+    fontWeight: FontWeight.w800,
     color: AppColors.textPrimary,
     letterSpacing: -0.5,
   );
@@ -71,7 +70,7 @@ class AppTypography {
 
   static const caption = TextStyle(
     fontSize: 15,
-    fontWeight: FontWeight.w600, // Più peso
+    fontWeight: FontWeight.w600,
     color: AppColors.textSecondary,
     letterSpacing: -0.2,
   );
@@ -83,7 +82,7 @@ class AppTypography {
   );
 
   static const timerLarge = TextStyle(
-    fontSize: 72, // Leggermente più piccolo da 84
+    fontSize: 72,
     fontWeight: FontWeight.w300,
     color: AppColors.textPrimary,
     fontFeatures: [FontFeature.tabularFigures()],
@@ -108,8 +107,33 @@ class AppRadius {
   static BorderRadius circular(double radius) => BorderRadius.circular(radius);
 }
 
+class AppShadows {
+  static const sm = [
+    BoxShadow(
+      color: Color(0x0A000000),
+      blurRadius: 10,
+      offset: Offset(0, 4),
+    ),
+  ];
+
+  static const md = [
+    BoxShadow(
+      color: Color(0x14000000),
+      blurRadius: 20,
+      offset: Offset(0, 8),
+    ),
+  ];
+
+  static final ctaGlow = [
+    BoxShadow(
+      color: AppColors.cta.withValues(alpha: 0.4),
+      blurRadius: 20,
+      offset: const Offset(0, 8),
+    ),
+  ];
+}
+
 class AppDecorations {
-  // Effetto Liquid Glass
   static Widget glassContainer({
     required Widget child,
     double blur = 20,
@@ -136,41 +160,24 @@ class AppDecorations {
     );
   }
 
-  static BoxDecoration card({required bool isSelected, Color? selectedColor}) {
+  static BoxDecoration card() {
     return BoxDecoration(
-      color: isSelected
-          ? (selectedColor ?? AppColors.primary)
-          : AppColors.glass(0.4),
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(AppRadius.lg),
-      border: Border.all(
-        color: isSelected ? AppColors.textPrimary : AppColors.glassBorder,
-        width: isSelected ? 3 : 1.5, // Più spessore per contrasto
-      ),
+      border: Border.all(color: AppColors.separator),
+      boxShadow: AppShadows.sm,
     );
   }
 }
 
 /// Asset paths for Bricky images
 class AppAssets {
-  // Logo principale (mattoncino singolo normale grande)
   static const brickyLogo = 'assets/images/bricky_logo.png';
-
-  // Mattoncino con fuoco (burn mode icon piccolo)
   static const brickyBurn = 'assets/images/bricky_burn.png';
-
-  // Mattoncino con fuoco più piccolo (alternativa burn mode)
   static const brickyBurnSmall = 'assets/images/bricky_burn_small.png';
-
-  // Gruppo di mattoncini (modalità gruppo)
   static const brickyGroup = 'assets/images/bricky_group.png';
-
-  // Mattoncino rotto con lacrima (sessione fallita)
   static const brickyBroken = 'assets/images/Bricky rotto.png';
-
-  // Mattoncino con libro (contatore pomodori)
   static const brickyCounter = 'assets/images/1 mattoncino_2 mattoncini.png';
-
-  // Mattoncino felice animato (celebrazione successo)
   static const brickyCelebration = 'assets/images/bricky_celebration.gif';
 }
 

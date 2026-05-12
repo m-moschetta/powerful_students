@@ -66,14 +66,16 @@ dependencies:
   cloud_firestore: ^5.4.4
 
   # Keep screen awake during study sessions
-  wakelock_plus:
-    path: third_party/wakelock_plus
+  wakelock_plus: ^1.2.8
 
   # For local data persistence (stats reset tracking)
   shared_preferences: ^2.3.5
   intl: ^0.20.2
   flutter_localizations:
     sdk: flutter
+  flutter_markdown: ^0.7.7+1
+  http: ^1.6.0
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -103,6 +105,7 @@ flutter:
   assets:
     - assets/sounds/
     - assets/images/
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:provider/provider.dart';
@@ -12,15 +11,17 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:powerful_students/core/design_system.dart';
 import 'package:powerful_students/providers/pomodoro_provider.dart';
 import 'package:powerful_students/providers/room_provider.dart';
+import 'package:powerful_students/providers/chat_provider.dart';
+import 'package:powerful_students/providers/settings_provider.dart';
 import 'package:powerful_students/screens/group_room_screen.dart';
-import 'package:powerful_students/screens/mode_selection_screen.dart';
+import 'package:powerful_students/screens/main_navigation_screen.dart';
 import 'package:powerful_students/screens/timer_screen.dart';
+import 'package:powerful_students/screens/settings_screen.dart';
 import 'package:powerful_students/l10n/app_localizations.dart';
 import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() {
-  BindingBase.debugZoneErrorsAreFatal = true;
-
   runZonedGuarded<Future<void>>(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
@@ -28,12 +29,14 @@ void main() {
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      FlutterError.onError = (FlutterErrorDetails details) {
-        Zone.current.handleUncaughtError(
-          details.exception,
-          details.stack ?? StackTrace.empty,
-        );
-      };
+      // Carica variabili d'ambiente
+      try {
+        await dotenv.load(fileName: '.env');
+      } catch (e) {
+        debugPrint('Errore caricamento .env: $e');
+      }
+
+      FlutterError.onError = FlutterError.dumpErrorToConsole;
 
       WidgetsBinding.instance.platformDispatcher.onError =
           (Object error, StackTrace stackTrace) {
@@ -43,11 +46,17 @@ void main() {
 
       await _configureTimezone();
 
+      final settingsProvider = SettingsProvider();
+      await settingsProvider.initialize();
+
       runApp(
         MultiProvider(
           providers: [
             ChangeNotifierProvider<RoomProvider>(
               create: (_) => RoomProvider(),
+            ),
+            ChangeNotifierProvider<SettingsProvider>.value(
+              value: settingsProvider,
             ),
             ChangeNotifierProxyProvider<RoomProvider, PomodoroProvider>(
               create: (_) => PomodoroProvider(),
@@ -55,6 +64,14 @@ void main() {
                 final notifier = pomodoroProvider ?? PomodoroProvider();
                 notifier.setRoomProvider(roomProvider);
                 return notifier;
+              },
+            ),
+            ChangeNotifierProxyProvider<SettingsProvider, ChatProvider>(
+              create: (_) => ChatProvider(),
+              update: (_, settings, chatProvider) {
+                final provider = chatProvider ?? ChatProvider();
+                provider.updateSettings(settings);
+                return provider;
               },
             ),
           ],
@@ -72,7 +89,6 @@ Future<void> _configureTimezone() async {
   tzdata.initializeTimeZones();
   try {
     final timezone = await FlutterTimezone.getLocalTimezone();
-    // FlutterTimezone potrebbe restituire un oggetto o una stringa a seconda della versione
     final String identifier = timezone is String ? timezone : (timezone as dynamic).identifier;
     tz.setLocalLocation(tz.getLocation(identifier));
   } catch (e) {
@@ -93,12 +109,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Inizializzazione notifiche e statistiche
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = context.read<PomodoroProvider>();
       await provider.initializeNotifications();
-
-      // Genera o recupera userId univoco per questo dispositivo
       await _initializeUserId(provider);
     });
   }
@@ -109,15 +122,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       String? userId = prefs.getString('device_user_id');
 
       if (userId == null) {
-        // Genera un nuovo userId univoco per questo dispositivo
         userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
         await prefs.setString('device_user_id', userId);
-        debugPrint('🆔 Nuovo userId generato: $userId');
-      } else {
-        debugPrint('🆔 UserId esistente: $userId');
       }
-
-      // Imposta l'userId nel provider e carica stats
       provider.setUserId(userId);
     } catch (e) {
       debugPrint('❌ Errore inizializzazione userId: $e');
@@ -142,7 +149,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    // Usiamo MaterialApp con stile iOS per retrocompatibilità e flessibilità
     return MaterialApp(
       onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
       debugShowCheckedModeBanner: false,
@@ -152,7 +158,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         useMaterial3: true,
         brightness: Brightness.light,
         platform: TargetPlatform.iOS,
-        scaffoldBackgroundColor: Colors.transparent, // Gestito dal gradiente nel body
+        scaffoldBackgroundColor: AppColors.background,
         fontFamily: AppTypography.fontFamily,
       ),
       initialRoute: '/',
@@ -160,7 +166,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         Widget page;
         switch (settings.name) {
           case '/':
-            page = const ModeSelectionScreen();
+            page = const MainNavigationScreen();
             break;
           case '/timer':
             page = const TimerScreen();
@@ -168,31 +174,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           case '/group-room':
             page = const GroupRoomScreen();
             break;
+          case '/settings':
+            page = const SettingsScreen();
+            break;
           default:
-            page = const ModeSelectionScreen();
+            page = const MainNavigationScreen();
         }
-        
-        // Usiamo CupertinoPageRoute per transizioni native iOS
         return CupertinoPageRoute(
-          builder: (context) => Stack(
-            children: [
-              // Background globale sfumato stile iOS 18/26
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.bgStart, AppColors.bgEnd],
-                  ),
-                ),
-              ),
-              page,
-            ],
-          ),
+          builder: (_) => page,
           settings: settings,
         );
       },
     );
   }
 }
-

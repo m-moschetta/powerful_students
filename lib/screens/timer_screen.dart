@@ -1,12 +1,10 @@
-import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:percent_indicator/percent_indicator.dart';
+import 'package:powerful_students/widgets/modern_timer_circle.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:powerful_students/providers/pomodoro_provider.dart';
-import 'package:powerful_students/models/study_session.dart';
 import 'package:powerful_students/core/design_system.dart';
 
 class TimerScreen extends StatefulWidget {
@@ -25,10 +23,8 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Attiva wakelock per mantenere lo schermo acceso
     WakelockPlus.enable();
 
-    // Inizializza il conteggio per rilevare nuovi completamenti
     final provider = context.read<PomodoroProvider>();
     _lastCompletedCount = provider.completedPomodoros;
   }
@@ -36,7 +32,6 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // Disattiva wakelock quando si esce dalla schermata
     WakelockPlus.disable();
     super.dispose();
   }
@@ -45,16 +40,10 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final provider = context.read<PomodoroProvider>();
 
-    // Se l'app va in background con burn mode attivo e sessione in corso, la sessione fallisce
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      if (provider.isBurnMode &&
-          provider.isRunning &&
-          provider.currentSession != null) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (provider.isBurnMode && provider.isRunning && provider.currentSession != null) {
         provider.stopTimer();
-        setState(() {
-          _sessionFailed = true;
-        });
+        setState(() => _sessionFailed = true);
       }
     }
   }
@@ -62,39 +51,42 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Consumer<PomodoroProvider>(
           builder: (context, provider, child) {
-            // Rileva completamento sessione
             if (provider.completedPomodoros > _lastCompletedCount) {
               _lastCompletedCount = provider.completedPomodoros;
               _sessionCompleted = true;
             }
 
-            // Mostra schermata di fallimento se la sessione è fallita
-            if (_sessionFailed) {
-              return _buildFailedScreen(context);
-            }
-
-            // Mostra schermata di successo se la sessione è completata
-            if (_sessionCompleted) {
-              return _buildSuccessScreen(context, provider);
-            }
+            if (_sessionFailed) return _buildFailedScreen(context);
+            if (_sessionCompleted) return _buildSuccessScreen(context, provider);
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: 8),
                   _buildHeader(context, provider),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Un mattoncino alla volta puoi\ncostruire molto più di quanto immagini.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textSecondary,
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                   const Spacer(),
                   _buildCircularTimer(provider),
                   const Spacer(),
                   _buildPomodoroStats(provider),
-                  const SizedBox(height: AppSpacing.xl),
-                  _buildActionButtons(context, provider),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: 20),
+                  _buildBottomActions(context, provider),
+                  const SizedBox(height: 16),
                 ],
               ),
             );
@@ -104,55 +96,197 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
     );
   }
 
+  Widget _buildHeader(BuildContext context, PomodoroProvider provider) {
+    return Row(
+      children: [
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Row(
+            children: [
+              Icon(CupertinoIcons.chevron_back, color: AppColors.textPrimary, size: 22),
+              Text(
+                'Back',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.separator),
+            boxShadow: AppShadows.sm,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                child: Image.asset(
+                  provider.isBurnMode ? AppAssets.brickyLogo : AppAssets.brickyBurn,
+                  key: ValueKey<bool>(provider.isBurnMode),
+                  width: provider.isBurnMode ? 32 : 24,
+                  height: provider.isBurnMode ? 32 : 24,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(width: 6),
+              CupertinoSwitch(
+                value: provider.isBurnMode,
+                onChanged: provider.isRunning ? null : (v) {
+                  HapticFeedback.mediumImpact();
+                  provider.toggleBurnMode();
+                },
+                activeTrackColor: AppColors.primary,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCircularTimer(PomodoroProvider provider) {
+    final session = provider.currentSession;
+    final progress = session?.progress ?? (provider.defaultWorkDuration / 3600.0).clamp(0.0, 1.0);
+    final timeText = session?.formattedRemainingTime ?? _formatDuration(provider.defaultWorkDuration);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ModernTimerCircle(
+          progress: progress,
+          radius: 120,
+          trackWidth: 6,
+          progressWidth: 12,
+          trackColor: AppColors.separator,
+          progressColor: AppColors.primary,
+          thumbColor: AppColors.primary,
+          thumbRadius: 16,
+          isDraggable: session == null,
+          onProgressChanged: session == null ? (p) {
+            final minutes = (p * 60).round().clamp(1, 60);
+            provider.setDefaultWorkDurationMinutes(minutes);
+          } : null,
+          center: _buildBrickyCenter(provider.isBurnMode && session != null, sessionProgress: session?.progress),
+        ),
+        const SizedBox(height: 16),
+        Text(timeText, style: AppTypography.timerLarge),
+      ],
+    );
+  }
+
+  Widget _buildBrickyCenter(bool isBurnMode, {double? sessionProgress}) {
+    final image = Image.asset(
+      isBurnMode ? AppAssets.brickyLogo : AppAssets.brickyBurn,
+      key: ValueKey<bool>(isBurnMode),
+      width: 140,
+      height: 140,
+      fit: BoxFit.contain,
+    );
+
+    Widget child = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+      child: image,
+    );
+
+    if (sessionProgress != null) {
+      final opacity = 0.2 + (sessionProgress * 0.8);
+      final scale = 0.85 + (sessionProgress * 0.15);
+      child = Opacity(opacity: opacity, child: Transform.scale(scale: scale, child: child));
+    }
+
+    return child;
+  }
+
+  Widget _buildBottomActions(BuildContext context, PomodoroProvider provider) {
+    final isRunning = provider.isRunning;
+
+    if (isRunning) {
+      return CupertinoButton(
+        padding: EdgeInsets.zero,
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          provider.stopTimer();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: AppColors.danger.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.danger.withValues(alpha: 0.5), width: 1.5),
+          ),
+          child: const Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(CupertinoIcons.stop_fill, size: 14, color: AppColors.danger),
+                SizedBox(width: 6),
+                Text(
+                  'STOP',
+                  style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w800, fontSize: 17, letterSpacing: 0.8),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.heavyImpact();
+        provider.startWorkSession();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 17),
+        decoration: BoxDecoration(
+          color: AppColors.cta,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          boxShadow: AppShadows.ctaGlow,
+        ),
+        child: const Center(
+          child: Text(
+            'INIZIA',
+            style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 17, letterSpacing: 0.8),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFailedScreen(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            AppAssets.brickyBroken,
-            width: 120,
-            height: 120,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            'SESSIONE FALLITA',
-            style: AppTypography.headline.copyWith(
-              color: Colors.red,
-              letterSpacing: 2,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
+          Image.asset(AppAssets.brickyBroken, width: 120, height: 120, fit: BoxFit.contain),
+          const SizedBox(height: 24),
+          const Text('Sessione fallita', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.danger)),
+          const SizedBox(height: 8),
+          const Text(
             'Hai lasciato l\'app durante una sessione di Deep Building.',
-            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 15, color: AppColors.textSecondary, height: 1.4),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: 40),
           CupertinoButton(
             padding: EdgeInsets.zero,
-            onPressed: () {
-              setState(() {
-                _sessionFailed = false;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 18),
-              decoration: BoxDecoration(
-                color: AppColors.cta,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-              child: const Text(
-                'RIPROVA',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 18,
-                ),
-              ),
-            ),
+            color: AppColors.cta,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            onPressed: () => setState(() => _sessionFailed = false),
+            child: const SizedBox(width: double.infinity, child: Center(child: Text('RIPROVA', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 17)))),
           ),
         ],
       ),
@@ -161,452 +295,36 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
 
   Widget _buildSuccessScreen(BuildContext context, PomodoroProvider provider) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Spacer(),
-          // Titolo
-          Text(
-            'Complimenti!',
-            style: AppTypography.headline.copyWith(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0,
-            ),
-            textAlign: TextAlign.center,
+          const Text('Complimenti!', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: AppColors.textPrimary), textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          const Text('Hai costruito un nuovo mattoncino', style: TextStyle(fontSize: 16, color: AppColors.textSecondary), textAlign: TextAlign.center),
+          const SizedBox(height: 40),
+          Container(
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withValues(alpha: 0.1)),
+            child: Center(child: Image.asset(AppAssets.brickyCelebration, width: 170, height: 170, fit: BoxFit.contain)),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          // Sottotitolo
-          Text(
-            'Hai costruito un nuovo mattoncino',
-            style: AppTypography.body.copyWith(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.xl),
-
-          // GIF animata con cerchio dietro
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              // Cerchio grigio chiaro di sfondo
-              Container(
-                width: 240,
-                height: 240,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.textSecondary.withValues(alpha: 0.08),
-                ),
-              ),
-              // GIF animata del mattoncino felice
-              Image.asset(
-                AppAssets.brickyCelebration,
-                width: 180,
-                height: 180,
-                fit: BoxFit.contain,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppSpacing.xl),
-          // Testo motivazionale
-          Text(
-            'Ricorda: ogni esame si prepara\nun mattoncino alla volta.',
-            style: AppTypography.body.copyWith(
-              fontSize: 15,
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          // Contatore mattoncini
+          const SizedBox(height: 32),
           Text(
             '${provider.completedPomodoros} ${provider.completedPomodoros == 1 ? 'mattoncino costruito' : 'mattoncini costruiti'}',
-            style: AppTypography.subtitle.copyWith(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
             textAlign: TextAlign.center,
           ),
           const Spacer(),
-
-          // Bottone CTA
           CupertinoButton(
             padding: EdgeInsets.zero,
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              setState(() {
-                _sessionCompleted = false;
-              });
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                color: AppColors.cta,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.cta.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Text(
-                  'Continua a costruire',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                  ),
-                ),
-              ),
-            ),
+            color: AppColors.cta,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            onPressed: () => setState(() => _sessionCompleted = false),
+            child: const SizedBox(width: double.infinity, child: Center(child: Text('Continua a costruire', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 17)))),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: 24),
         ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, PomodoroProvider provider) {
-    final bool isSessionActive = provider.currentSession != null;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () {
-            if (provider.isRunning) {
-              provider.stopTimer();
-            }
-            Navigator.of(context).pop();
-          },
-          child: const Row(
-            children: [
-              Icon(AppIcons.back, color: AppColors.textPrimary, size: 28),
-              Text(
-                'Back',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Row(
-          children: [
-            // Toggle suono
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(36, 36),
-              onPressed: () {
-                HapticFeedback.selectionClick();
-                provider.toggleSound();
-              },
-              child: AppDecorations.glassContainer(
-                padding: const EdgeInsets.all(8),
-                child: Icon(
-                  provider.soundEnabled
-                      ? CupertinoIcons.speaker_2_fill
-                      : CupertinoIcons.speaker_slash_fill,
-                  size: 18,
-                  color: provider.soundEnabled
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Toggle Deep Focus (mattoncino)
-            AppDecorations.glassContainer(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Row(
-                children: [
-                  // Mattoncino Deep Focus - acceso/spento basato su isBurnMode
-                  Opacity(
-                    opacity: provider.isBurnMode ? 1.0 : 0.4,
-                    child: Image.asset(
-                      AppAssets.brickyBurnSmall,
-                      width: 16,
-                      height: 16,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  CupertinoSwitch(
-                    value: provider.isBurnMode,
-                    // Disabilita lo switch durante la sessione attiva
-                    onChanged: isSessionActive
-                        ? null
-                        : (value) {
-                            HapticFeedback.mediumImpact();
-                            provider.toggleBurnMode();
-                          },
-                    activeTrackColor: AppColors.primary,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCircularTimer(PomodoroProvider provider) {
-    final session = provider.currentSession;
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Timer circolare con mattoncino al centro
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              // Ghiera di contrasto esterna (Ring)
-              Container(
-                width: 310,
-                height: 310,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.textPrimary.withValues(alpha: 0.15),
-                    width: 15,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 30,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-              ),
-
-              if (session == null)
-                _buildSetupTimer(provider)
-              else
-                _buildActiveTimerCircle(session, provider.isBurnMode),
-            ],
-          ),
-
-          // Timer info SOTTO il cerchio
-          if (session != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            _buildTimerInfo(session),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSetupTimer(PomodoroProvider provider) {
-    return AppDecorations.glassContainer(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      borderRadius: BorderRadius.circular(155),
-      child: SizedBox(
-        width: 290,
-        height: 290,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _formatDuration(provider.defaultWorkDuration),
-                  style: AppTypography.timerLarge,
-                ),
-                const Text('IMPOSTA TEMPO', style: AppTypography.label),
-              ],
-            ),
-            _buildTimerPoints(),
-            _DraggableTimerIndicator(
-              radius: 125.0,
-              initialMinutes: provider.defaultWorkDuration ~/ 60,
-              onMinutesChanged: (minutes) {
-                provider.setDefaultWorkDurationMinutes(minutes);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Cerchio del timer con solo il mattoncino al centro
-  Widget _buildActiveTimerCircle(StudySession session, bool isBurnMode) {
-    return CircularPercentIndicator(
-      radius: 150.0,
-      lineWidth: 12.0,
-      animation: true,
-      animateFromLastPercent: true,
-      percent: session.progress,
-      backgroundColor: AppColors.textPrimary.withValues(alpha: 0.05),
-      progressColor: AppColors.primary,
-      circularStrokeCap: CircularStrokeCap.round,
-      center: ClipOval(
-        child: SizedBox(
-          width: 280,
-          height: 280,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Liquid Animation in background
-              _LiquidBackground(progress: session.progress),
-
-              // MATTONCINO AL CENTRO - fisso e protagonista
-              _AnimatedBrickyBuilder(
-                progress: session.progress,
-                isBurnMode: isBurnMode,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Timer info SOTTO il cerchio
-  Widget _buildTimerInfo(StudySession session) {
-    return Column(
-      children: [
-        Text(
-          _getSessionText(session.type),
-          style: AppTypography.label.copyWith(
-            letterSpacing: 3,
-            fontWeight: FontWeight.w900,
-            fontSize: 12,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          session.formattedRemainingTime,
-          style: AppTypography.timerLarge.copyWith(
-            fontSize: 52,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${(session.progress * 100).round()}%',
-          style: AppTypography.caption.copyWith(
-            fontWeight: FontWeight.w800,
-            fontSize: 14,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimerPoints() {
-    return Stack(
-      children: List.generate(60, (index) {
-        final angle = (index * 6) * pi / 180;
-        final isMajor = index % 5 == 0;
-        return Transform.translate(
-          offset: Offset(cos(angle) * 120, sin(angle) * 120),
-          child: Container(
-            width: isMajor ? 4 : 2,
-            height: isMajor ? 4 : 2,
-            decoration: BoxDecoration(
-              color: isMajor
-                  ? AppColors.textPrimary
-                  : AppColors.textPrimary.withValues(alpha: 0.3),
-              shape: BoxShape.circle,
-            ),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildActionButtons(BuildContext context, PomodoroProvider provider) {
-    final session = provider.currentSession;
-    final isRunning = provider.isRunning;
-    final isSoloMode = provider.selectedMode == StudyMode.solo;
-
-    // Se c'è una sessione attiva, mostra solo STOP (per studio singolo)
-    if (session != null && isRunning) {
-      // In modalità solo: mostra solo STOP
-      // In modalità gruppo: nessun controllo (gestito dall'host nella group_room_screen)
-      if (isSoloMode) {
-        return CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            provider.stopTimer();
-          },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: Colors.red, width: 2),
-            ),
-            child: const Center(
-              child: Text(
-                'STOP',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 18,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ),
-          ),
-        );
-      } else {
-        // In modalità gruppo, non mostrare controlli durante la sessione
-        return const SizedBox.shrink();
-      }
-    }
-
-    // Prima di iniziare: mostra START
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: () {
-        HapticFeedback.heavyImpact();
-        provider.startWorkSession();
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(
-          color: AppColors.cta,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.cta.withValues(alpha: 0.4),
-              blurRadius: 25,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: const Center(
-          child: Text(
-            'START STUDY',
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.w900,
-              fontSize: 18,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -634,278 +352,9 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
     );
   }
 
-  String _getSessionText(SessionType type) {
-    switch (type) {
-      case SessionType.work:
-        return 'CONCENTRATI';
-      case SessionType.shortBreak:
-        return 'PAUSA';
-      case SessionType.longBreak:
-        return 'RELAX';
-    }
-  }
-
   String _formatDuration(int totalSeconds) {
     final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
     final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
-  }
-}
-
-class _LiquidBackground extends StatefulWidget {
-  final double progress;
-  const _LiquidBackground({required this.progress});
-
-  @override
-  State<_LiquidBackground> createState() => _LiquidBackgroundState();
-}
-
-class _LiquidBackgroundState extends State<_LiquidBackground>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return CustomPaint(
-          size: const Size(300, 300),
-          painter: _LiquidPainter(
-            animationValue: _controller.value,
-            progress: widget.progress,
-            color: AppColors.primary.withValues(alpha: 0.4),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _LiquidPainter extends CustomPainter {
-  final double animationValue;
-  final double progress;
-  final Color color;
-
-  _LiquidPainter({
-    required this.animationValue,
-    required this.progress,
-    required this.color,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    final path = Path();
-
-    final yOffset = size.height * (1 - progress);
-    final waveHeight = 15.0;
-
-    path.moveTo(0, size.height);
-    path.lineTo(0, yOffset);
-
-    for (double x = 0; x <= size.width; x++) {
-      final y =
-          yOffset +
-          sin((x / size.width * 2 * pi) + (animationValue * 2 * pi)) *
-              waveHeight;
-      path.lineTo(x, y);
-    }
-
-    path.lineTo(size.width, size.height);
-    path.close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _LiquidPainter oldDelegate) => true;
-}
-
-class _DraggableTimerIndicator extends StatefulWidget {
-  final double radius;
-  final int initialMinutes;
-  final Function(int minutes) onMinutesChanged;
-
-  const _DraggableTimerIndicator({
-    required this.radius,
-    required this.initialMinutes,
-    required this.onMinutesChanged,
-  });
-
-  @override
-  State<_DraggableTimerIndicator> createState() =>
-      _DraggableTimerIndicatorState();
-}
-
-class _DraggableTimerIndicatorState extends State<_DraggableTimerIndicator> {
-  late double _currentAngle;
-  int _lastMinute = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentAngle = _minutesToAngle(widget.initialMinutes);
-    _lastMinute = widget.initialMinutes;
-  }
-
-  double _calculateAngle(Offset center, Offset point) {
-    return atan2(point.dy - center.dy, point.dx - center.dx);
-  }
-
-  int _angleToMinutes(double angle) {
-    double normalizedAngle = angle + pi / 2;
-    if (normalizedAngle < 0) normalizedAngle += 2 * pi;
-    int minutes = ((normalizedAngle / (2 * pi)) * 60).round();
-    if (minutes == 0) minutes = 60;
-    return minutes.clamp(1, 60);
-  }
-
-  double _minutesToAngle(int minutes) {
-    final clampedMinutes = minutes.clamp(1, 60);
-    final effectiveMinutes = clampedMinutes == 60 ? 60 : clampedMinutes;
-    final normalized = (effectiveMinutes / 60) * 2 * pi;
-    return normalized - pi / 2;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Il centro è a metà del container (145, 145 per un container 290x290)
-    const double containerSize = 290;
-    final center = const Offset(containerSize / 2, containerSize / 2);
-    final buttonX = cos(_currentAngle) * (widget.radius - 15);
-    final buttonY = sin(_currentAngle) * (widget.radius - 15);
-
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onPanUpdate: (details) {
-        final angle = _calculateAngle(center, details.localPosition);
-        final minutes = _angleToMinutes(angle);
-
-        if (minutes != _lastMinute) {
-          HapticFeedback.selectionClick();
-          _lastMinute = minutes;
-        }
-
-        setState(() => _currentAngle = angle);
-        widget.onMinutesChanged(minutes);
-      },
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: containerSize,
-            height: containerSize,
-            color: Colors.transparent,
-          ),
-          Positioned(
-            left: buttonX + (containerSize / 2) - 18,
-            top: buttonY + (containerSize / 2) - 18,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.textPrimary, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.5),
-                    blurRadius: 15,
-                  ),
-                ],
-              ),
-              child: const Icon(AppIcons.drag, size: 18, color: Colors.black),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Animated Bricky widget that progressively reveals as session progresses
-/// Il mattoncino è il PROTAGONISTA: fisso al centro, appare gradualmente
-class _AnimatedBrickyBuilder extends StatefulWidget {
-  final double progress;
-  final bool isBurnMode;
-
-  const _AnimatedBrickyBuilder({
-    required this.progress,
-    required this.isBurnMode,
-  });
-
-  @override
-  State<_AnimatedBrickyBuilder> createState() => _AnimatedBrickyBuilderState();
-}
-
-class _AnimatedBrickyBuilderState extends State<_AnimatedBrickyBuilder>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _floatController;
-
-  @override
-  void initState() {
-    super.initState();
-    // Animazione leggera di floating
-    _floatController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _floatController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Calculate reveal factor: fully visible at 97% progress (29/30 minutes)
-    final revealFactor = (widget.progress / 0.97).clamp(0.0, 1.0);
-
-    // Scegli l'immagine in base al burn mode
-    final assetPath = widget.isBurnMode
-        ? AppAssets.brickyBurn  // con fuoco (burn mode attivo)
-        : AppAssets.brickyLogo; // normale (burn mode spento)
-
-    return AnimatedBuilder(
-      animation: _floatController,
-      builder: (context, child) {
-        // Leggero movimento su e giù (max 8 pixel)
-        final floatOffset = _floatController.value * 8.0;
-
-        return Transform.translate(
-          offset: Offset(0, -floatOffset),
-          child: Opacity(
-            opacity: revealFactor,
-            child: Transform.scale(
-              scale: 0.8 + (revealFactor * 0.2), // Da 80% a 100% di dimensione
-              child: Image.asset(
-                assetPath,
-                width: 170,
-                height: 170,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 }
