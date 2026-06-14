@@ -219,4 +219,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationChannelDescription => 'Pomodoro timer notifications';
+
+  @override
+  String get chatSkillLabel => 'Mode';
+
+  @override
+  String get chatSkillSheetTitle => 'Study skill';
+
+  @override
+  String get chatSkillApply => 'Apply';
+
+  @override
+  String get chatSkillDefault => 'General';
+
+  @override
+  String get chatSkillAuto => 'Auto';
+
+  @override
+  String get chatSkillAutoRouting => 'Automatic routing';
+
+  @override
+  String get chatSkillAutoRoutingHint =>
+      'The skill is chosen from your message (keywords). Turn off to pick manually.';
 }

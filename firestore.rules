@@ -18,5 +18,11 @@ service cloud.firestore {
     match /students/{studentId} {
       allow read, write: if true; // TODO: tighten with auth
     }
+
+    // Skill catalog (read-only for clients; writes via Admin SDK / playground)
+    match /skills_catalog/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }

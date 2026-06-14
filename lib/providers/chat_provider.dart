@@ -12,9 +12,11 @@ class ChatProvider extends ChangeNotifier {
     : _chatService = chatService ?? AiChatService();
 
   final AiChatService _chatService;
+  SettingsProvider? _settings;
 
   /// Syncs chat service settings from the SettingsProvider.
   void updateSettings(SettingsProvider settings) {
+    _settings = settings;
     _chatService.apiKeyOverride = settings.apiKey;
     _chatService.modelOverride = settings.model;
     _chatService.systemPromptOverride = settings.effectiveSystemPrompt;
@@ -56,6 +58,12 @@ class ChatProvider extends ChangeNotifier {
       timestamp: DateTime.now(),
     );
     _messages.add(userMessage);
+
+    final settings = _settings;
+    if (settings != null) {
+      await settings.routeSkillForMessage(text.trim());
+      updateSettings(settings);
+    }
 
     // Create placeholder assistant message for streaming
     final assistantId = (DateTime.now().millisecondsSinceEpoch + 1).toString();

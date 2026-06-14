@@ -82,5 +82,12 @@
   "notificationWorkTitle": "Tempo di studiare!",
   "notificationWorkBody": "La pausa è finita. Iniziamo un nuovo pomodoro!",
   "notificationChannelName": "Pomodoro Timer",
-  "notificationChannelDescription": "Notifiche per il timer Pomodoro"
+  "notificationChannelDescription": "Notifiche per il timer Pomodoro",
+  "chatSkillLabel": "Modalità",
+  "chatSkillSheetTitle": "Skill di studio",
+  "chatSkillApply": "Applica",
+  "chatSkillDefault": "Generale",
+  "chatSkillAuto": "Auto",
+  "chatSkillAutoRouting": "Routing automatico",
+  "chatSkillAutoRoutingHint": "La skill viene scelta dal messaggio (keyword). Disattiva per selezionarla manualmente."
 }

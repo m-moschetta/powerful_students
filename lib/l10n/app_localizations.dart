@@ -463,6 +463,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pomodoro timer notifications'**
   String get notificationChannelDescription;
+
+  /// No description provided for @chatSkillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get chatSkillLabel;
+
+  /// No description provided for @chatSkillSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Study skill'**
+  String get chatSkillSheetTitle;
+
+  /// No description provided for @chatSkillApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get chatSkillApply;
+
+  /// No description provided for @chatSkillDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get chatSkillDefault;
+
+  /// No description provided for @chatSkillAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get chatSkillAuto;
+
+  /// No description provided for @chatSkillAutoRouting.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic routing'**
+  String get chatSkillAutoRouting;
+
+  /// No description provided for @chatSkillAutoRoutingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The skill is chosen from your message (keywords). Turn off to pick manually.'**
+  String get chatSkillAutoRoutingHint;
 }
 
 class _AppLocalizationsDelegate

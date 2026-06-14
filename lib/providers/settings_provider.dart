@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:powerful_students/models/study_skill.dart';
+import 'package:powerful_students/services/skill_router.dart';
+import 'package:powerful_students/services/skill_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AiModel {
@@ -37,6 +40,8 @@ class SettingsProvider extends ChangeNotifier {
   static const _keyApiKey = 'openrouter_api_key';
   static const _keySystemPrompt = 'ai_system_prompt';
   static const _keyModel = 'ai_model';
+  static const _keySkillId = 'ai_skill_id';
+  static const _keyAutoSkillRouting = 'ai_skill_auto_routing';
 
   SharedPreferences? _prefs;
 
@@ -49,6 +54,17 @@ class SettingsProvider extends ChangeNotifier {
 
   String _model = 'openrouter/auto';
   String get model => _model;
+
+  String _selectedSkillId = 'none';
+  String get selectedSkillId => _selectedSkillId;
+
+  bool _autoSkillRouting = true;
+  bool get autoSkillRouting => _autoSkillRouting;
+
+  List<StudySkill> get availableSkills => SkillService.instance.skills;
+
+  StudySkill? get selectedSkill =>
+      SkillService.instance.getById(_selectedSkillId);
 
   List<AiModel> _availableModels = [];
   List<AiModel> get availableModels => _availableModels;
@@ -97,9 +113,25 @@ Regole:
 - Usa emoji con moderazione per rendere le risposte più vivaci
 ''';
 
-  /// The effective system prompt (custom or default).
+  /// Prompt effettivo: override utente, oppure base + skill attiva.
   String get effectiveSystemPrompt =>
-      _systemPrompt.isNotEmpty ? _systemPrompt : defaultSystemPrompt;
+      composedSystemPromptForSkill(_selectedSkillId);
+
+  /// Componi base + corpo skill (senza override utente custom).
+  String composedSystemPromptForSkill(String skillId) {
+    if (_systemPrompt.isNotEmpty) {
+      return _systemPrompt;
+    }
+    final base = defaultSystemPrompt.trim();
+    if (skillId == 'none') {
+      return base;
+    }
+    final skill = SkillService.instance.getById(skillId);
+    if (skill == null || !skill.hasPromptBody) {
+      return base;
+    }
+    return '$base\n\n---\n\n${skill.promptBody.trim()}';
+  }
 
   static const _keyBaseUrl = 'ai_base_url';
 
@@ -107,10 +139,22 @@ Regole:
   String get baseUrl => _baseUrl;
 
   Future<void> initialize() async {
+    await SkillService.instance.ensureLoaded();
+    SkillService.instance.startRemoteListener(() {
+      if (SkillService.instance.getById(_selectedSkillId) == null) {
+        _selectedSkillId = 'none';
+      }
+      notifyListeners();
+    });
     _prefs = await SharedPreferences.getInstance();
     _apiKey = _prefs?.getString(_keyApiKey) ?? '';
     _systemPrompt = _prefs?.getString(_keySystemPrompt) ?? '';
     _model = _prefs?.getString(_keyModel) ?? 'openrouter/auto';
+    _selectedSkillId = _prefs?.getString(_keySkillId) ?? 'none';
+    _autoSkillRouting = _prefs?.getBool(_keyAutoSkillRouting) ?? true;
+    if (SkillService.instance.getById(_selectedSkillId) == null) {
+      _selectedSkillId = 'none';
+    }
     _baseUrl = _prefs?.getString(_keyBaseUrl) ?? 'https://openrouter.ai/api/v1';
     _availableModels = fallbackAiModels;
     notifyListeners();
@@ -147,6 +191,40 @@ Regole:
     _model = model;
     await _prefs?.setString(_keyModel, _model);
     notifyListeners();
+  }
+
+  Future<void> setSelectedSkillId(String skillId) async {
+    if (SkillService.instance.getById(skillId) == null) {
+      return;
+    }
+    _selectedSkillId = skillId;
+    await _prefs?.setString(_keySkillId, skillId);
+    notifyListeners();
+  }
+
+  /// Selezione manuale: disattiva il routing automatico finché non lo riattivi.
+  Future<void> setSelectedSkillIdManual(String skillId) async {
+    await setAutoSkillRouting(false);
+    await setSelectedSkillId(skillId);
+  }
+
+  Future<void> setAutoSkillRouting(bool enabled) async {
+    _autoSkillRouting = enabled;
+    await _prefs?.setBool(_keyAutoSkillRouting, enabled);
+    notifyListeners();
+  }
+
+  /// Routing keyword sul messaggio utente (solo se auto attivo e niente override prompt).
+  Future<void> routeSkillForMessage(String message) async {
+    if (!_autoSkillRouting || _systemPrompt.isNotEmpty) {
+      return;
+    }
+    final routed = SkillRouter.route(message, availableSkills);
+    if (routed != _selectedSkillId) {
+      _selectedSkillId = routed;
+      await _prefs?.setString(_keySkillId, routed);
+      notifyListeners();
+    }
   }
 
   /// Fetches all available models from the OpenRouter API.

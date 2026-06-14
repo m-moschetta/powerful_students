@@ -82,5 +82,12 @@
   "notificationWorkTitle": "Back to work!",
   "notificationWorkBody": "Break is over. Let's build another brick!",
   "notificationChannelName": "Pomodoro Timer",
-  "notificationChannelDescription": "Pomodoro timer notifications"
+  "notificationChannelDescription": "Pomodoro timer notifications",
+  "chatSkillLabel": "Mode",
+  "chatSkillSheetTitle": "Study skill",
+  "chatSkillApply": "Apply",
+  "chatSkillDefault": "General",
+  "chatSkillAuto": "Auto",
+  "chatSkillAutoRouting": "Automatic routing",
+  "chatSkillAutoRoutingHint": "The skill is chosen from your message (keywords). Turn off to pick manually."
 }

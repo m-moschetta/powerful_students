@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "id": "none",
+      "name": "Generale",
+      "description": "Buddy standard per lo studio e la motivazione",
+      "keywords": []
+    },
+    {
+      "id": "procrastinazione",
+      "name": "Procrastinazione",
+      "description": "Quando non inizi, rimandi o lasci tutto all'ultimo",
+      "file": "procrastinazione/SKILL.md",
+      "keywords": [
+        "procrastin",
+        "rimand",
+        "posticip",
+        "non ho voglia",
+        "non inizio",
+        "non riesco a iniziare",
+        "ultimo momento",
+        "all'ultimo",
+        "blocco",
+        "distraz",
+        "perfezionism",
+        "noia di studiare",
+        "non parto"
+      ]
+    },
+    {
+      "id": "esame-orale",
+      "name": "Esame orale",
+      "description": "Ansia, preparazione e simulazione orale",
+      "file": "esame-orale/SKILL.md",
+      "keywords": [
+        "esame orale",
+        "orale",
+        "interrog",
+        "colloquio",
+        "ansia",
+        "blocco",
+        "simulazione",
+        "professor",
+        "domande oral",
+        "parlare davanti",
+        "memorizzare a voce",
+        "presentation"
+      ]
+    }
+  ]
+}

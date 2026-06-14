@@ -119,6 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
               onSettings: () => Navigator.pushNamed(context, '/settings'),
               onClear: _showClearConfirmation,
             ),
+            const ChatSkillPicker(),
             Expanded(
               child: Consumer<ChatProvider>(
                 builder: (context, provider, _) {
